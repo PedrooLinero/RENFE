@@ -1,12 +1,53 @@
 // Importar libreria para respuestas
 const Respuesta = require("../utils/respuesta");
 const { logMensaje } = require("../utils/logger.js");
-
+const XLSX = require("sheetjs-style");
+const path = require("path");
+const fs = require("fs");
 class RenfeController {
+  static leerExcel(nombreExcel) {
+    console.log("Ha entrado en leerExcel");
 
-    async leerExcel(req, res) {
-        
+    try {
+      const filePath = path.join(__dirname, "../uploads/", nombreExcel);
+
+      // Leer el archivo Excel
+      const workbook = XLSX.readFile(filePath);
+
+      // Obtener la primera hoja de trabajo
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+
+      // Convertir la hoja a JSON
+      const data = XLSX.utils.sheet_to_json(sheet);
+
+      return data;
+    } catch (error) {
+      console.error("Error al leer el archivo Excel:", error);
+      throw new Error("Error al leer el archivo Excel.");
     }
+  }
+
+  async guardarExcels(req, res) {
+    const fichero1 = req.files["fichero1"]
+      ? req.files["fichero1"][0].filename
+      : null;
+
+    console.log("Fichero 1:", fichero1);
+
+    if (!fichero1) {
+      return res.status(400).json({ message: "Se debe subir varios ficheros" });
+    }
+
+    try {
+      const excelData1 = RenfeController.leerExcel(fichero1);
+
+      console.log("Datos del Excel 1:", excelData1);
+    } catch (error) {
+      console.error("Error al procesar el archivo:", error);
+      res.status(500).json({ message: "Error al procesar el archivo Excel." });
+    }
+  }
 
   //   async createPlato(req, res) {
   //     // Implementa la lógica para crear un nuevo plato
