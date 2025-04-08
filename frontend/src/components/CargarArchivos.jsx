@@ -13,10 +13,12 @@ function CargarArchivos() {
     e.preventDefault();
 
     const formDataToSend = new FormData();
-    if (formData.fichero1 && formData.fichero2) {
+    if (formData.fichero1) {
       formDataToSend.append("fichero1", formData.fichero1);
     }
 
+    console.log(formData.fichero1);
+    
     try {
       const response = await fetch(apiUrl + "/datos", {
         method: "POST",

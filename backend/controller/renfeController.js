@@ -11,159 +11,96 @@ class RenfeController {
     try {
       const filePath = path.join(__dirname, "../uploads/", nombreExcel);
 
-      // Leer el archivo Excel
-      const workbook = XLSX.readFile(filePath);
+      // Verificar si el archivo existe
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`El archivo no existe en la ruta: ${filePath}`);
+      }
 
-      // Obtener la primera hoja de trabajo
+      // Leer el archivo Excel
+      const workbook = XLSX.readFile(filePath, { cellDates: true });
       const sheetName = workbook.SheetNames[0];
+      if (!sheetName) {
+        throw new Error("No se encontraron hojas en el workbook");
+      }
+
       const sheet = workbook.Sheets[sheetName];
 
-      // Convertir la hoja a JSON
-      const data = XLSX.utils.sheet_to_json(sheet);
+      // Convertir la hoja a JSON con opciones personalizadas
+      const data = XLSX.utils.sheet_to_json(sheet, {
+        header: 1, // Usar la primera fila como encabezado sin procesar
+        raw: false, // Convertir valores a strings o números según corresponda
+        blankrows: false, // Ignorar filas completamente vacías
+        defval: 0, // Usar 0 como valor por defecto para celdas vacías
+      });
 
-      return data;
+      // Procesar los datos manualmente
+      const processedData = [];
+      let currentCity = null;
+      let currentCode = null;
+
+      data.forEach((row) => {
+        // Detectar nuevas secciones (como "CIUDAD REAL - 449")
+        if (typeof row[0] === "string" && row[0].includes(" - ")) {
+          const [city, code] = row[0].split(" - ");
+          currentCity = city.trim();
+          currentCode = code.trim();
+          return; // Saltar esta fila de título
+        }
+
+        // Ignorar filas de resumen o vacías
+        if (!row[0] || row[0].includes("Resumen por fechas")) {
+          return;
+        }
+
+        // Estructurar los datos útiles
+        processedData.push({
+          city: currentCity, // Nombre de la ciudad
+          code: currentCode, // Código
+          category: row[0], // Ej: "LR", "DOT", "LF"
+          dailyValues: row.slice(1, 32), // Valores diarios (31 días)
+          total: row[32], // Columna "Total"
+          totalEuros: row[33], // Columna "Total €"
+          unitPrice: row[34], // Columna "Precio unitario"
+        });
+      });
+
+      return processedData;
     } catch (error) {
-      console.error("Error al leer el archivo Excel:", error);
-      throw new Error("Error al leer el archivo Excel.");
+      console.error("Error al leer el archivo Excel:", error.message);
+      throw new Error(`Error al leer el archivo Excel: ${error.message}`);
     }
   }
 
   async guardarExcels(req, res) {
-    const fichero1 = req.files["fichero1"]
-      ? req.files["fichero1"][0].filename
-      : null;
-
-    console.log("Fichero 1:", fichero1);
-
-    if (!fichero1) {
-      return res.status(400).json({ message: "Se debe subir varios ficheros" });
-    }
-
     try {
-      const excelData1 = RenfeController.leerExcel(fichero1);
+      const fichero1 = req.files["fichero1"]
+        ? req.files["fichero1"][0].filename
+        : null;
+
+      console.log("Fichero 1:", fichero1);
+
+      if (!fichero1) {
+        return res
+          .status(400)
+          .json({ message: "Se debe subir al menos un fichero" });
+      }
+
+      const excelData1 = await RenfeController.leerExcel(fichero1);
 
       console.log("Datos del Excel 1:", excelData1);
+      
+      return res.status(200).json({
+        message: "Archivo procesado correctamente",
+        data: excelData1,
+      });
     } catch (error) {
-      console.error("Error al procesar el archivo:", error);
-      res.status(500).json({ message: "Error al procesar el archivo Excel." });
+      console.error("Error al procesar el archivo:", error.message);
+      return res.status(500).json({
+        message: "Error al procesar el archivo Excel",
+        error: error.message,
+      });
     }
   }
-
-  //   async createPlato(req, res) {
-  //     // Implementa la lógica para crear un nuevo plato
-  //     const plato = req.body;
-  //     try {
-  //       const platoNuevo = await Plato.create(plato);
-  //       res.status(201).json(Respuesta.exito(platoNuevo, "Plato insertado"));
-  //     } catch (err) {
-  //       logMensaje("Error :" + err);
-  //       res
-  //         .status(500)
-  //         .json(Respuesta.error(null, `Error al crear un plato nuevo: ${plato}`));
-  //     }
-  //   }
-  //   async getAllPlato(req, res) {
-  //     try {
-  //       const data = await Plato.findAll(); // Recuperar todos los platos
-  //       res.json(Respuesta.exito(data, "Datos de platos recuperados"));
-  //     } catch (err) {
-  //       // Handle errors during the model call
-  //       res
-  //         .status(500)
-  //         .json(
-  //           Respuesta.error(
-  //             null,
-  //             `Error al recuperar los datos de los platos: ${req.originalUrl}`
-  //           )
-  //         );
-  //     }
-  //   }
-  //   async deletePlato(req, res) {
-  //     const idplato = req.params.idplato;
-  //     try {
-  //       const numFilas = await Plato.destroy({
-  //         where: {
-  //           idplato: idplato,
-  //         },
-  //       });
-  //       if (numFilas == 0) {
-  //         // No se ha encontrado lo que se quería borrar
-  //         res
-  //           .status(404)
-  //           .json(Respuesta.error(null, "No encontrado: " + idplato));
-  //       } else {
-  //         res.status(204).send();
-  //       }
-  //     } catch (err) {
-  //       logMensaje("Error :" + err);
-  //       res
-  //         .status(500)
-  //         .json(
-  //           Respuesta.error(
-  //             null,
-  //             `Error al eliminar los datos: ${req.originalUrl}`
-  //           )
-  //         );
-  //     }
-  //   }
-  //   async getPlatoById(req, res) {
-  //     // El id plato viene en la ruta /api/platos/:idplato
-  //     const idplato = req.params.idplato;
-  //     try {
-  //       const fila = await Plato.findByPk(idplato);
-  //       if (fila) {
-  //         // Si se ha recuprado un plato
-  //         res.json(Respuesta.exito(fila, "Plato recuperado"));
-  //       } else {
-  //         res.status(404).json(Respuesta.error(null, "Plato no encontrado"));
-  //       }
-  //     } catch (err) {
-  //       logMensaje("Error :" + err);
-  //       res
-  //         .status(500)
-  //         .json(
-  //           Respuesta.error(
-  //             null,
-  //             `Error al recuperar los datos: ${req.originalUrl}`
-  //           )
-  //         );
-  //     }
-  //   }
-  //   async updatePlato(req, res) {
-  //     const plato = req.body; // Recuperamos datos para actualizar
-  //     const idplato = req.params.idplato; // dato de la ruta
-  //     // Petición errónea, no coincide el id del plato de la ruta con el del objeto a actualizar
-  //     if (idplato != plato.idplato) {
-  //       return res
-  //         .status(400)
-  //         .json(Respuesta.error(null, "El id del plato no coincide"));
-  //     }
-  //     try {
-  //       const numFilas = await Plato.update({ ...plato }, { where: { idplato } });
-  //       if (numFilas == 0) {
-  //         // No se ha encontrado lo que se quería actualizar o no hay nada que cambiar
-  //         res
-  //           .status(404)
-  //           .json(
-  //             Respuesta.error(null, "No encontrado o no modificado: " + idplato)
-  //           );
-  //       } else {
-  //         // Al dar status 204 no se devuelva nada
-  //         // res.status(204).json(Respuesta.exito(null, "Plato actualizado"));
-  //         res.status(204).send();
-  //       }
-  //     } catch (err) {
-  //       logMensaje("Error :" + err);
-  //       res
-  //         .status(500)
-  //         .json(
-  //           Respuesta.error(
-  //             null,
-  //             `Error al actualizar los datos: ${req.originalUrl}`
-  //           )
-  //         );
-  //     }
-  //   }
 }
 
 module.exports = new RenfeController();

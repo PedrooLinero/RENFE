@@ -28,7 +28,7 @@ if (process.env.NODE_ENV !== "production") {
   // Configurar CORS para admitir el origen del frontend en desarrollo
   app.use(
     cors({
-      origin: "http://localhost:5173", // Permitir el frontend en desarrollo de React
+      origin: "http://localhost:5174", // Permitir el frontend en desarrollo de React
       credentials: true, // Permitir envío de cookies
     })
   );
