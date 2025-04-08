@@ -13,6 +13,9 @@ const path = require("path");
 const cors = require("cors");
 
 // Importar gestores de rutas
+const renfeRoutes = require("./routes/renfeRoutes");
+
+// Importar gestores de rutas
 const app = express();
 
 // Configurar middleware para analizar JSON en las solicitudes
@@ -32,7 +35,7 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // Configurar rutas de la API Rest
-// app.use("/api/platos", platoRoutes);
+app.use("/api/datos", renfeRoutes);
 
 
 //Ruta para manejar las solicitudes al archivo index.html
