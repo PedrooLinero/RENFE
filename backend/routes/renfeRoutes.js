@@ -22,7 +22,10 @@ const upload = multer({ storage });
 // router.get('/:idplato', platoController.getPlatoById);
 router.post(
   "/",
-  upload.fields([{ name: "fichero1", maxCount: 1 }]),
+  upload.fields([
+    { name: "fichero1", maxCount: 1 },
+    { name: "fichero2", maxCount: 1 },
+  ]),
   renfeController.guardarExcels
 );
 // router.delete('/:idplato', platoController.deletePlato);
