@@ -6,6 +6,7 @@ import { apiUrl } from "../config"; // Cambia la ruta según tu estructura de ca
 function CargarArchivos() {
   const [formData, setFormData] = useState({
     fichero1: null,
+    fichero2: null,
   });
 
   const handleSubmit = async (e) => {
@@ -13,12 +14,11 @@ function CargarArchivos() {
     e.preventDefault();
 
     const formDataToSend = new FormData();
-    if (formData.fichero1) {
+    if (formData.fichero1 && formData.fichero2) {
       formDataToSend.append("fichero1", formData.fichero1);
+      formDataToSend.append("fichero2", formData.fichero2);
     }
 
-    console.log(formData.fichero1);
-    
     try {
       const response = await fetch(apiUrl + "/datos", {
         method: "POST",
@@ -26,15 +26,19 @@ function CargarArchivos() {
         credentials: "include",
       });
 
-    //   const blob = await response.blob();
-    //   const url = window.URL.createObjectURL(blob);
-    //   const a = document.createElement("a");
-    //   a.href = url;
-    //   a.download = "resultado.xlsx"; // Nombre del archivo
-    //   document.body.appendChild(a);
-    //   a.click();
-    //   a.remove();
-    //   window.URL.revokeObjectURL(url);
+      if (response.ok) {
+        alert(response.message);
+      }
+
+      //   const blob = await response.blob();
+      //   const url = window.URL.createObjectURL(blob);
+      //   const a = document.createElement("a");
+      //   a.href = url;
+      //   a.download = "resultado.xlsx"; // Nombre del archivo
+      //   document.body.appendChild(a);
+      //   a.click();
+      //   a.remove();
+      //   window.URL.revokeObjectURL(url);
     } catch (error) {
       alert("Error de red. Inténtalo de nuevo más tarde.");
     }
@@ -42,6 +46,10 @@ function CargarArchivos() {
 
   const handleFileChange1 = (e) => {
     setFormData({ ...formData, fichero1: e.target.files[0] });
+  };
+
+  const handleFileChange2 = (e) => {
+    setFormData({ ...formData, fichero2: e.target.files[0] });
   };
 
   return (
@@ -75,6 +83,24 @@ function CargarArchivos() {
                   type="file"
                   fullWidth
                   onChange={handleFileChange1}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  required
+                />
+                <Typography
+                  variant="subtitle1"
+                  gutterBottom
+                  sx={{ fontWeight: "700" }}
+                >
+                  Fichero2:
+                </Typography>
+                <TextField
+                  id="fichero2"
+                  variant="outlined"
+                  type="file"
+                  fullWidth
+                  onChange={handleFileChange2}
                   InputLabelProps={{
                     shrink: true,
                   }}
