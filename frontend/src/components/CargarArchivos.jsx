@@ -1,12 +1,24 @@
-import React from "react";
-import { useState } from "react";
-import { Box, Button, Grid, Paper, TextField, Typography } from "@mui/material";
-import { apiUrl } from "../config"; // Cambia la ruta según tu estructura de carpetas
+import React, { useState } from "react";
+import {
+  Box,
+  Button,
+  Grid,
+  Paper,
+  TextField,
+  Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+} from "@mui/material";
+import { apiUrl } from "../config"; // Ajusta la ruta según la estructura de tu proyecto
 
 function CargarArchivos() {
   const [formData, setFormData] = useState({
     fichero1: null,
   });
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,31 +46,69 @@ function CargarArchivos() {
       if (contentType.includes("application/json")) {
         // Caso sin actualizaciones
         const data = await response.json();
-        alert(data.message);
+        setDialogOpen(true);
+        setDialogMessage(data.message);
       } else {
-        const contentDisposition = response.headers.get("Content-Disposition");
-        const suggestedName = contentDisposition
-          ? contentDisposition.split("filename=")[1].replace(/"/g, "")
-          : "resultado.xlsx";
+        // Mostrar diálogo con "Guardando Archivo" mientras se procesa
+        setDialogOpen(true);
+        setDialogMessage("Procesando...");
 
-        // Crear el blob y forzar la descarga
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = suggestedName; // Nombre sugerido (el usuario puede cambiarlo)
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
+
+        // Intentar usar showSaveFilePicker si está disponible
+        if (window.showSaveFilePicker) {
+          const suggestedName = "resultado.xlsx"; // Nombre sugerido por defecto
+          const fileHandle = await window.showSaveFilePicker({
+            suggestedName: suggestedName,
+            types: [
+              {
+                description: "Archivo Excel",
+                accept: {
+                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                    [".xlsx"],
+                },
+              },
+            ],
+          });
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          setDialogMessage("Archivo guardado con éxito");
+        } else {
+          // Respaldo para navegadores sin soporte a showSaveFilePicker
+          const defaultName = "resultado.xlsx";
+          const userFileName = prompt(
+            "Introduce el nombre del archivo (incluye .xlsx):",
+            defaultName
+          );
+          const fileName =
+            userFileName && userFileName.trim() ? userFileName : defaultName;
+
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          setDialogMessage("Archivo guardado con éxito");
+        }
       }
     } catch (error) {
-      alert(error.message || "Error de red. Inténtalo de nuevo más tarde.");
+      setDialogOpen(true);
+      setDialogMessage(
+        error.message || "Error de red. Inténtalo de nuevo más tarde."
+      );
     }
   };
 
   const handleFileChange1 = (e) => {
     setFormData({ ...formData, fichero1: e.target.files[0] });
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
   };
 
   return (
@@ -84,7 +134,7 @@ function CargarArchivos() {
                   gutterBottom
                   sx={{ fontWeight: "700" }}
                 >
-                  ResumenFechas:
+                  Archivo ResumenFechas:
                 </Typography>
                 <TextField
                   id="fichero1"
@@ -115,6 +165,14 @@ function CargarArchivos() {
           </Box>
         </Paper>
       </Box>
+
+      {/* Diálogo para mostrar mensajes */}
+      <Dialog open={dialogOpen} onClose={handleDialogClose}>
+        <DialogTitle>Guardando Archivo</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{dialogMessage}</DialogContentText>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
