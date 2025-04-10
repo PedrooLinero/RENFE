@@ -223,10 +223,10 @@ class RenfeController {
         : null;
       const fichero2 = "Base.xlsx";
 
-      if (!fichero1 || !fichero2) {
+      if (!fichero1) {
         return res
           .status(400)
-          .json({ message: "Se deben subir ambos ficheros" });
+          .json({ message: "Se debe subir el archivo de resumenFechas" });
       }
 
       const excelData1 = await RenfeController.leerExcel(fichero1);
