@@ -10,10 +10,9 @@ function CargarArchivos() {
   });
 
   const handleSubmit = async (e) => {
-    console.log(formData);
     e.preventDefault();
-
     const formDataToSend = new FormData();
+
     if (formData.fichero1 && formData.fichero2) {
       formDataToSend.append("fichero1", formData.fichero1);
       formDataToSend.append("fichero2", formData.fichero2);
@@ -26,21 +25,32 @@ function CargarArchivos() {
         credentials: "include",
       });
 
-      if (response.ok) {
-        alert(response.message);
+      // Verificar tipo de contenido
+      const contentType = response.headers.get("content-type");
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error en la solicitud");
       }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "resultado.xlsx"; // Nombre del archivo
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      if (contentType.includes("application/json")) {
+        // Caso sin actualizaciones
+        const data = await response.json();
+        alert(data.message);
+      } else {
+        // Descargar archivo
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "resultado.xlsx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      }
     } catch (error) {
-      alert("Error de red. Inténtalo de nuevo más tarde.");
+      alert(error.message || "Error de red. Inténtalo de nuevo más tarde.");
     }
   };
 
