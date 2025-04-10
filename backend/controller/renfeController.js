@@ -221,9 +221,6 @@ class RenfeController {
         ? req.files["fichero2"][0].filename
         : null;
 
-      console.log("Fichero 1:", fichero1);
-      console.log("Fichero 2:", fichero2);
-
       if (!fichero1 || !fichero2) {
         return res
           .status(400)
@@ -233,36 +230,17 @@ class RenfeController {
       const excelData1 = await RenfeController.leerExcel(fichero1);
       const excelData2 = await RenfeController.leerExcel2(fichero2);
 
-      console.log("Datos del Excel 1:", excelData1);
-      console.log("Datos del Excel 2:", excelData2);
-
       // Mapa para almacenar las actualizaciones por fila del segundo archivo
       const updatesMap = {};
 
-      // Mapa para mapear combinaciones de NOMBRE y Tren a su rowIndex
-      const rowIndexMap = new Map();
-
-      // Construir el mapa de rowIndex para cada combinación de NOMBRE y Tren
-      for (let j = 0; j < excelData2.length; j++) {
-        const name2 = excelData2[j].name;
-        const train2 = excelData2[j].train;
-        const rowIndex = excelData2[j]._rowIndex;
-        const key = `${name2}-${train2}`;
-        rowIndexMap.set(key, rowIndex);
-      }
-
-      console.log("Mapa de rowIndex:", Object.fromEntries(rowIndexMap));
-
       // Comparar datos
       for (let i = 0; i < excelData1.length; i++) {
-        const city1 = excelData1[i].city
-          ? RenfeController.cleanString(excelData1[i].city)
-          : "";
-        const train1 = excelData1[i].code
-          ? RenfeController.cleanTrain(excelData1[i].code)
-          : "";
-        const category = excelData1[i].category;
-        const total = excelData1[i].total || 0;
+        const city1 = RenfeController.cleanString(excelData1[i].city || "");
+        const train1 = RenfeController.cleanTrain(excelData1[i].code || "");
+        const category = RenfeController.cleanString(
+          excelData1[i].category || ""
+        );
+        const total = parseFloat(excelData1[i].total) || 0;
 
         if (!city1 || !train1 || !category) {
           console.log(
@@ -277,16 +255,19 @@ class RenfeController {
           }: city="${city1}", train="${train1}", category="${category}", total=${total}`
         );
 
-        // Buscar el rowIndex correspondiente a la combinación city1-train1
-        const key = `${city1}-${train1}`;
-        const rowIndex = rowIndexMap.get(key);
+        // Buscar la fila correspondiente en excelData2
+        const matchingRow = excelData2.find(
+          (row) => row.name === city1 && row.train === train1
+        );
 
-        if (rowIndex === undefined) {
+        if (!matchingRow) {
           console.log(
             `No se encontró una fila en Excel 2 para la combinación: ${city1}-${train1}`
           );
           continue;
         }
+
+        const rowIndex = matchingRow._rowIndex;
 
         console.log(
           `Coincidencia encontrada: ${city1} - Tren: ${train1} - Category: ${category} - Total: ${total} (Fila ${rowIndex})`
@@ -298,7 +279,7 @@ class RenfeController {
             rowIndex: rowIndex,
             name: city1,
             train: train1,
-            newValue: 0, // Para "Importe según CARGAS"
+            newValue: 0, // Para "Importe según CARGAS" (columna 31)
             loads: {
               L0: 0,
               LC: 0,
@@ -321,12 +302,12 @@ class RenfeController {
           };
         }
 
-        // Sumar el total a "Importe según CARGAS"
+        // Sumar el total a "Importe según CARGAS" (columna 31, índice 32 en Excel)
         updatesMap[rowIndex].newValue += total;
 
         // Asignar el total a la categoría correspondiente
         if (updatesMap[rowIndex].loads.hasOwnProperty(category)) {
-          updatesMap[rowIndex].loads[category] = total; // Usar asignación directa
+          updatesMap[rowIndex].loads[category] = total;
           console.log(
             `Asignando total ${total} a la categoría ${category} en la fila ${rowIndex}`
           );
@@ -337,23 +318,9 @@ class RenfeController {
         }
       }
 
-      // Convertir el mapa de actualizaciones a un array
       const updates = Object.values(updatesMap);
-
-      // Depurar el contenido de updates
       console.log("Actualizaciones encontradas:", updates);
 
-      updates.forEach((update, index) => {
-        console.log(`Update ${index}:`, {
-          rowIndex: update.rowIndex,
-          name: update.name,
-          train: update.train,
-          newValue: update.newValue,
-          loads: update.loads,
-        });
-      });
-
-      // Si hay actualizaciones, modificar el segundo archivo
       let updatedFilePath = null;
       if (updates.length > 0) {
         const filePath2 = path.join(__dirname, "../uploads/", fichero2);
@@ -370,11 +337,7 @@ class RenfeController {
         });
       }
 
-      return res.status(200).json({
-        message: "Archivos procesados correctamente",
-        updates: updates,
-        updatedFile: updatedFilePath ? path.basename(updatedFilePath) : null,
-      });
+      res.json(Respuesta.exito(updates, "Archivos procesados correctamente"));
     } catch (error) {
       console.error("Error al procesar los archivos:", error.message);
       return res.status(500).json({
@@ -390,28 +353,17 @@ class RenfeController {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.readFile(filePath);
       const sheet = workbook.worksheets[0];
-      if (!sheet) {
-        throw new Error("No se encontraron hojas en el workbook");
-      }
+      if (!sheet) throw new Error("No se encontraron hojas en el workbook");
 
-      // Solo actualizar las filas que están en updates
       updates.forEach((update) => {
-        // Validar que rowIndex sea un número válido
-        if (typeof update.rowIndex !== "number" || update.rowIndex < 0) {
-          console.error(`Error: rowIndex inválido en update:`, update);
-          return; // Saltar este update si rowIndex no es válido
-        }
-
-        const rowIndex = update.rowIndex; // _rowIndex ya es el índice real de la fila (basado en 1)
-
-        // Verificar si la fila existe en la hoja
+        const rowIndex = update.rowIndex;
         const row = sheet.getRow(rowIndex);
+
         if (!row) {
           console.error(`Error: La fila ${rowIndex} no existe en la hoja.`);
-          return; // Saltar este update si la fila no existe
+          return;
         }
 
-        // Leer el nombre y el tren de la fila para validación
         const nameInRow = RenfeController.cleanString(
           row.getCell(RenfeController.COLUMN_INDEXES.NAME + 1).value
         );
@@ -419,52 +371,30 @@ class RenfeController {
           row.getCell(RenfeController.COLUMN_INDEXES.TRAIN + 1).value
         );
 
-        // Validar que la fila corresponde a la combinación esperada
         if (nameInRow !== update.name || trainInRow !== update.train) {
           console.error(
-            `Error: La fila ${rowIndex} no coincide con la combinación esperada. ` +
-              `Esperado: NOMBRE=${update.name}, Tren=${update.train}, ` +
-              `Encontrado: NOMBRE=${nameInRow}, Tren=${trainInRow}`
+            `Error: La fila ${rowIndex} no coincide: Esperado ${update.name}-${update.train}, Encontrado ${nameInRow}-${trainInRow}`
           );
-          return; // Saltar esta actualización
+          return;
         }
 
         console.log(
           `Actualizando fila ${rowIndex} (NOMBRE: ${nameInRow}, Tren: ${trainInRow})`
         );
 
-        // Actualizar las columnas de "CARGAS" (14 a 30)
+        // Actualizar columnas de "CARGAS"
         Object.keys(RenfeController.COLUMN_LOADS).forEach((loadColumn) => {
           const columnIndex = RenfeController.COLUMN_LOADS[loadColumn];
-          // Validar que columnIndex sea un número y esté en el rango correcto
-          if (
-            typeof columnIndex !== "number" ||
-            columnIndex < 14 ||
-            columnIndex > 30
-          ) {
-            console.error(
-              `Error: columnIndex inválido para ${loadColumn}:`,
-              columnIndex
-            );
-            return; // Saltar esta columna si el índice no es válido
-          }
-
-          // ExcelJS usa columnas basadas en 1, por lo que sumamos 1 al columnIndex
           const cellLoad = sheet.getCell(rowIndex, columnIndex + 1);
-          const loadValue =
-            update.loads && update.loads[loadColumn] !== undefined
-              ? update.loads[loadColumn]
-              : 0;
-
-          console.log(
-            `Actualizando fila ${rowIndex}, columna ${loadColumn} (índice ${columnIndex}) con valor: ${loadValue}`
-          );
-          // Asignar la celda: si es 0, ponerla en blanco.
+          const loadValue = update.loads[loadColumn] || 0;
           cellLoad.value = loadValue === 0 ? "" : loadValue;
         });
+
+        // Actualizar "Importe según CARGAS" (columna 31, índice 32 en Excel)
+        const importeCargasCell = sheet.getCell(rowIndex, 32); // Índice 32 = columna 31 + 1
+        importeCargasCell.value = update.newValue === 0 ? "" : update.newValue;
       });
 
-      // Guardar el archivo sobrescribiendo el original
       await workbook.xlsx.writeFile(filePath);
       console.log("Archivo Excel actualizado correctamente:", filePath);
       return filePath;
