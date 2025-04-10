@@ -177,7 +177,7 @@ class RenfeController {
   // Método para leer el segundo Excel (Fichero Seguimiento)
   static async leerExcel2(nombreExcel) {
     console.log(`Leyendo Excel: ${nombreExcel} con ExcelJS`);
-    const filePath = path.join(__dirname, "../uploads/", nombreExcel);
+    const filePath = path.join(__dirname, "../uploads/" + nombreExcel);
     if (!fs.existsSync(filePath)) {
       throw new Error(`El archivo no existe en la ruta: ${filePath}`);
     }
@@ -221,9 +221,7 @@ class RenfeController {
       const fichero1 = req.files["fichero1"]
         ? req.files["fichero1"][0].filename
         : null;
-      const fichero2 = req.files["fichero2"]
-        ? req.files["fichero2"][0].filename
-        : null;
+      const fichero2 = "Base.xlsx";
 
       if (!fichero1 || !fichero2) {
         return res
@@ -343,15 +341,11 @@ class RenfeController {
 
       // Enviar el archivo modificado como descarga
       res.download(
-        updatedFilePath, // Ruta del archivo modificado
-        "resultado.xlsx", // Nombre sugerido para el archivo
+        updatedFilePath,
+        "resultado.xlsx", // Nombre sugerido (el usuario puede cambiarlo en la ventana de guardado)
         (err) => {
-          if (err) {
-            console.error("Error al enviar el archivo:", err);
-            res.status(500).json({ message: "Error al descargar el archivo" });
-          }
-          // Opcional: Eliminar el archivo temporal después de enviarlo
-          // fs.unlinkSync(updatedFilePath);
+          if (err) console.error("Error al descargar:", err);
+          // Eliminar archivos temporales si es necesario
         }
       );
     } catch (error) {
