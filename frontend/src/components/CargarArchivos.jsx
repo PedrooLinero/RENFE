@@ -6,16 +6,14 @@ import { apiUrl } from "../config"; // Cambia la ruta según tu estructura de ca
 function CargarArchivos() {
   const [formData, setFormData] = useState({
     fichero1: null,
-    fichero2: null,
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formDataToSend = new FormData();
 
-    if (formData.fichero1 && formData.fichero2) {
+    if (formData.fichero1) {
       formDataToSend.append("fichero1", formData.fichero1);
-      formDataToSend.append("fichero2", formData.fichero2);
     }
 
     try {
@@ -38,15 +36,20 @@ function CargarArchivos() {
         const data = await response.json();
         alert(data.message);
       } else {
-        // Descargar archivo
+        const contentDisposition = response.headers.get("Content-Disposition");
+        const suggestedName = contentDisposition
+          ? contentDisposition.split("filename=")[1].replace(/"/g, "")
+          : "resultado.xlsx";
+
+        // Crear el blob y forzar la descarga
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "resultado.xlsx";
+        a.download = suggestedName; // Nombre sugerido (el usuario puede cambiarlo)
         document.body.appendChild(a);
         a.click();
-        a.remove();
+        document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
       }
     } catch (error) {
@@ -56,10 +59,6 @@ function CargarArchivos() {
 
   const handleFileChange1 = (e) => {
     setFormData({ ...formData, fichero1: e.target.files[0] });
-  };
-
-  const handleFileChange2 = (e) => {
-    setFormData({ ...formData, fichero2: e.target.files[0] });
   };
 
   return (
@@ -93,24 +92,6 @@ function CargarArchivos() {
                   type="file"
                   fullWidth
                   onChange={handleFileChange1}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  required
-                />
-                <Typography
-                  variant="subtitle1"
-                  gutterBottom
-                  sx={{ fontWeight: "700" }}
-                >
-                  Fichero2:
-                </Typography>
-                <TextField
-                  id="fichero2"
-                  variant="outlined"
-                  type="file"
-                  fullWidth
-                  onChange={handleFileChange2}
                   InputLabelProps={{
                     shrink: true,
                   }}
