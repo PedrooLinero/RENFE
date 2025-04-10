@@ -10,8 +10,57 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
+  IconButton,
+  styled,
 } from "@mui/material";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import SaveIcon from "@mui/icons-material/Save"; // Ícono para el título del modal
+import CloseIcon from "@mui/icons-material/Close"; // Ícono para cerrar el modal
 import { apiUrl } from "../config"; // Ajusta la ruta según la estructura de tu proyecto
+
+// Definimos StyledPaper con un tamaño más grande
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(6),
+  borderRadius: "16px",
+  boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
+  background: "linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%)",
+  width: "100%",
+}));
+
+// Definimos StyledButton con color rojo
+const StyledButton = styled(Button)(({ theme }) => ({
+  borderRadius: "8px",
+  padding: theme.spacing(1.5, 4),
+  textTransform: "none",
+  fontWeight: 600,
+  boxShadow: "0 2px 10px rgba(211, 47, 47, 0.3)",
+  backgroundColor: "#d32f2f",
+  "&:hover": {
+    boxShadow: "0 4px 15px rgba(211, 47, 47, 0.5)",
+    backgroundColor: "#b71c1c",
+  },
+}));
+
+// Definimos un StyledDialog para el modal
+const StyledDialog = styled(Dialog)(({ theme }) => ({
+  "& .MuiDialog-paper": {
+    borderRadius: "16px",
+    boxShadow: "0 8px 30px rgba(0, 0, 0, 0.2)",
+    backgroundColor: "rgba(255, 255, 255, 0.98)", // Fondo blanco con ligera transparencia
+    padding: theme.spacing(2),
+    animation: "fadeIn 0.3s ease-in-out", // Animación de entrada
+  },
+  "@keyframes fadeIn": {
+    "0%": {
+      opacity: 0,
+      transform: "scale(0.95)",
+    },
+    "100%": {
+      opacity: 1,
+      transform: "scale(1)",
+    },
+  },
+}));
 
 function CargarArchivos() {
   const [formData, setFormData] = useState({
@@ -35,7 +84,6 @@ function CargarArchivos() {
         credentials: "include",
       });
 
-      // Verificar tipo de contenido
       const contentType = response.headers.get("content-type");
 
       if (!response.ok) {
@@ -44,20 +92,17 @@ function CargarArchivos() {
       }
 
       if (contentType.includes("application/json")) {
-        // Caso sin actualizaciones
         const data = await response.json();
         setDialogOpen(true);
         setDialogMessage(data.message);
       } else {
-        // Mostrar diálogo con "Guardando Archivo" mientras se procesa
         setDialogOpen(true);
         setDialogMessage("Procesando...");
 
         const blob = await response.blob();
 
-        // Intentar usar showSaveFilePicker si está disponible
         if (window.showSaveFilePicker) {
-          const suggestedName = "resultado.xlsx"; // Nombre sugerido por defecto
+          const suggestedName = "resultado.xlsx";
           const fileHandle = await window.showSaveFilePicker({
             suggestedName: suggestedName,
             types: [
@@ -75,7 +120,6 @@ function CargarArchivos() {
           await writable.close();
           setDialogMessage("Archivo guardado con éxito");
         } else {
-          // Respaldo para navegadores sin soporte a showSaveFilePicker
           const defaultName = "resultado.xlsx";
           const userFileName = prompt(
             "Introduce el nombre del archivo (incluye .xlsx):",
@@ -113,66 +157,145 @@ function CargarArchivos() {
 
   return (
     <>
-      <Box sx={{ height: "72vh" }}>
-        <Typography variant="h4" align="center" sx={{ margin: 3 }}>
-          Insertar archivos
-        </Typography>
-
-        <Paper sx={{ padding: 4, boxShadow: 3 }}>
-          <Box
-            component="form"
-            sx={{ "& > :not(style)": { m: 1, width: "100%" } }}
-            noValidate
-            autoComplete="off"
-            onSubmit={handleSubmit}
+      <Box
+        sx={{
+          height: "72vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Box sx={{ width: "100%", maxWidth: "800px" }}>
+          <Typography
+            variant="h4"
+            align="center"
+            sx={{
+              marginBottom: 4,
+              fontWeight: 700,
+              color: "#d32f2f",
+              letterSpacing: "0.5px",
+            }}
           >
-            <Grid container spacing={3}>
-              {/* Fichero 1 */}
-              <Grid item xs={12} sm={6}>
-                <Typography
-                  variant="subtitle1"
-                  gutterBottom
-                  sx={{ fontWeight: "700" }}
-                >
-                  Archivo ResumenFechas:
-                </Typography>
-                <TextField
-                  id="fichero1"
-                  variant="outlined"
-                  type="file"
-                  fullWidth
-                  onChange={handleFileChange1}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  required
-                />
-              </Grid>
+            Cargar y Actualizar Datos
+          </Typography>
 
-              <Box
-                sx={{ display: "flex", justifyContent: "left", marginLeft: 1 }}
-              >
-                <Button
-                  variant="contained"
-                  color="primary"
-                  type="submit"
-                  sx={{ marginTop: 2, marginLeft: 3 }}
+          <StyledPaper elevation={3}>
+            <Box
+              component="form"
+              sx={{ width: "100%" }}
+              noValidate
+              autoComplete="off"
+              onSubmit={handleSubmit}
+            >
+              <Grid container spacing={3} justifyContent="center">
+                {/* Fichero 1 */}
+                <Grid item xs={12} sm={8} md={6}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      gutterBottom
+                      sx={{
+                        fontWeight: 600,
+                        color: "#424242",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "100%",
+                      }}
+                    >
+                      <CloudUploadIcon sx={{ mr: 1, color: "#d32f2f" }} />
+                      Archivo ResumenFechas
+                    </Typography>
+                    <TextField
+                      id="fichero1"
+                      variant="outlined"
+                      type="file"
+                      fullWidth
+                      onChange={handleFileChange1}
+                      InputLabelProps={{
+                        shrink: true,
+                      }}
+                      required
+                      sx={{
+                        width: "100%",
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "8px",
+                          backgroundColor: "#fff",
+                          width: "100%",
+                          "& fieldset": {
+                            borderColor: "#d32f2f",
+                          },
+                          "&:hover fieldset": {
+                            borderColor: "#b71c1c",
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+                </Grid>
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    width: "100%",
+                    mt: 2,
+                  }}
                 >
-                  Actualizar Plantilla
-                </Button>
-              </Box>
-            </Grid>
-          </Box>
-        </Paper>
+                  <StyledButton
+                    variant="contained"
+                    type="submit"
+                    startIcon={<CloudUploadIcon />}
+                  >
+                    Actualizar Plantilla
+                  </StyledButton>
+                </Box>
+              </Grid>
+            </Box>
+          </StyledPaper>
+        </Box>
       </Box>
 
       {/* Diálogo para mostrar mensajes */}
-      <Dialog open={dialogOpen} onClose={handleDialogClose}>
-        <DialogTitle>Guardando Archivo</DialogTitle>
-        <DialogContent>
-          <DialogContentText>{dialogMessage}</DialogContentText>
+      <StyledDialog open={dialogOpen} onClose={handleDialogClose}>
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            color: "#d32f2f",
+            fontWeight: 600,
+            borderBottom: "1px solid rgba(0, 0, 0, 0.1)",
+            pb: 2,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <SaveIcon sx={{ mr: 1, color: "#d32f2f" }} />
+            Guardando Archivo
+          </Box>
+          <IconButton onClick={handleDialogClose} sx={{ color: "#d32f2f" }}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <DialogContentText
+            sx={{
+              color: "#424242",
+              fontSize: "1.1rem",
+              textAlign: "center",
+              fontWeight: 500,
+            }}
+          >
+            {dialogMessage}
+          </DialogContentText>
         </DialogContent>
-      </Dialog>
+      </StyledDialog>
     </>
   );
 }
