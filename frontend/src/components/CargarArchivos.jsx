@@ -30,15 +30,15 @@ function CargarArchivos() {
         alert(response.message);
       }
 
-      //   const blob = await response.blob();
-      //   const url = window.URL.createObjectURL(blob);
-      //   const a = document.createElement("a");
-      //   a.href = url;
-      //   a.download = "resultado.xlsx"; // Nombre del archivo
-      //   document.body.appendChild(a);
-      //   a.click();
-      //   a.remove();
-      //   window.URL.revokeObjectURL(url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "resultado.xlsx"; // Nombre del archivo
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       alert("Error de red. Inténtalo de nuevo más tarde.");
     }
