@@ -136,11 +136,15 @@ class RenfeController {
           continue;
         }
 
-        // Leer el total desde la columna 33 (índice 32)
-        const totalColumnIndex = 32;
+        // Obtener la longitud de la fila actual
+        const rowLength = row.length;
+        // La antepenúltima columna será rowLength - 3 (ya que el índice empieza en 0)
+        const totalColumnIndex = rowLength - 3;
         const totalValue = parseFloat(row[totalColumnIndex]) || 0;
         console.log(
-          `Fila ${i + 1}: totalValue=${totalValue} (índice ${totalColumnIndex})`
+          `Fila ${
+            i + 1
+          }: totalValue=${totalValue} (índice ${totalColumnIndex}, longitud fila=${rowLength})`
         );
 
         // Crear la entrada procesada
@@ -337,7 +341,19 @@ class RenfeController {
         });
       }
 
-      res.json(Respuesta.exito(updates, "Archivos procesados correctamente"));
+      // Enviar el archivo modificado como descarga
+      res.download(
+        updatedFilePath, // Ruta del archivo modificado
+        "resultado.xlsx", // Nombre sugerido para el archivo
+        (err) => {
+          if (err) {
+            console.error("Error al enviar el archivo:", err);
+            res.status(500).json({ message: "Error al descargar el archivo" });
+          }
+          // Opcional: Eliminar el archivo temporal después de enviarlo
+          // fs.unlinkSync(updatedFilePath);
+        }
+      );
     } catch (error) {
       console.error("Error al procesar los archivos:", error.message);
       return res.status(500).json({
