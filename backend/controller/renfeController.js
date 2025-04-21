@@ -31,6 +31,7 @@ class RenfeController {
     N2: 28,
     N3: 29,
     "Vehículos Taller": 30,
+    "Importe CÍCLICAS": 33,
   };
 
   // Método para limpiar cadenas de texto (nombres)
@@ -83,17 +84,17 @@ class RenfeController {
 
       for (let i = 1; i < data.length; i++) {
         const row = data[i];
-        console.log(`Procesando fila ${i + 1} (crudo):`, row);
+        // console.log(`Procesando fila ${i + 1} (crudo):`, row);
 
         const nameValue = RenfeController.cleanString(row[0]);
-        console.log(
-          `Fila ${i + 1}: nameValue después de cleanString="${nameValue}"`
-        );
+        // console.log(
+        //   `Fila ${i + 1}: nameValue después de cleanString="${nameValue}"`
+        // );
 
         // Detectar un nuevo bloque (como "PUERTOLLANO   - 599")
         if (nameValue && nameValue.includes(" - ")) {
           const normalizedName = nameValue.replace(/\s+-\s+/g, " - ");
-          console.log(`Fila ${i + 1}: normalizedName="${normalizedName}"`);
+          // console.log(`Fila ${i + 1}: normalizedName="${normalizedName}"`);
           const parts = normalizedName.split(" - ");
           if (parts.length === 2) {
             currentName = RenfeController.cleanString(parts[0]); // Ej: "PUERTOLLANO"
@@ -213,6 +214,76 @@ class RenfeController {
     }
   }
 
+  static async leerExcel3(nombreExcel) {
+    const filePath = path.join(__dirname, "../uploads/" + nombreExcel);
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`El archivo no existe en la ruta: ${filePath}`);
+    }
+    try {
+      const workbook = XLSX.readFile(filePath);
+      const sheetName = workbook.SheetNames[0];
+      if (!sheetName) throw new Error("No se encontraron hojas en el workbook");
+
+      const sheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        raw: false,
+        blankrows: false,
+        defval: "",
+      });
+
+      // Buscar la fila que contiene los encabezados esperados
+      const targetHeaders = [
+        "Estación/Dependencia",
+        "Código",
+        "Recinto",
+        "Elemento",
+        "Operación",
+        "Frecuencia",
+        "Sem",
+        "Precio",
+      ];
+
+      let headerRowIndex = -1;
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        // Verificar si la fila actual coincide con los encabezados esperados
+        const matchesHeaders = targetHeaders.every(
+          (header, idx) =>
+            String(row[idx] || "")
+              .trim()
+              .toLowerCase() === header.trim().toLowerCase()
+        );
+        if (matchesHeaders) {
+          headerRowIndex = i;
+          break;
+        }
+      }
+
+      if (headerRowIndex === -1) {
+        throw new Error("No se encontró la fila de encabezados esperada");
+      }
+
+      // Cortar desde la fila de encabezados + 1 (para incluir los datos siguientes)
+      let filteredData = data.slice(headerRowIndex + 1);
+
+      // Eliminar filas vacías o que no tengan datos relevantes
+      filteredData = filteredData.filter((row) =>
+        row.some((cell) => cell !== "" && cell !== undefined && cell !== null)
+      );
+
+      // Eliminar las 2 últimas filas (totales y firmas)
+      filteredData = filteredData.slice(0, -2);
+
+      return filteredData;
+    } catch (error) {
+      console.error(`Error al leer el archivo ${nombreExcel}:`, error.message);
+      throw new Error(
+        `Error al leer el archivo ${nombreExcel}: ${error.message}`
+      );
+    }
+  }
+
   // Método principal para procesar y guardar los Excels
   async guardarExcels(req, res) {
     try {
@@ -220,6 +291,9 @@ class RenfeController {
         ? req.files["fichero1"][0].filename
         : null;
       const fichero2 = "Base.xlsx";
+      const fichero3 = req.files["fichero3"]
+        ? req.files["fichero3"][0].filename
+        : null;
 
       if (!fichero1) {
         return res
@@ -229,6 +303,9 @@ class RenfeController {
 
       const excelData1 = await RenfeController.leerExcel(fichero1);
       const excelData2 = await RenfeController.leerExcel2(fichero2);
+      const excelData3 = await RenfeController.leerExcel3(fichero3);
+
+      console.log(excelData3);
 
       // Mapa para almacenar las actualizaciones por fila del segundo archivo
       const updatesMap = {};
@@ -249,11 +326,11 @@ class RenfeController {
           continue;
         }
 
-        console.log(
-          `Procesando Excel 1 - Fila ${
-            i + 1
-          }: city="${city1}", train="${train1}", category="${category}", total=${total}`
-        );
+        // console.log(
+        //   `Procesando Excel 1 - Fila ${
+        //     i + 1
+        //   }: city="${city1}", train="${train1}", category="${category}", total=${total}`
+        // );
 
         // Buscar la fila correspondiente en excelData2
         const matchingRow = excelData2.find(

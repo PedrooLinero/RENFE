@@ -18,17 +18,13 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// router.get('/', platoController.getAllPlato);
-// router.get('/:idplato', platoController.getPlatoById);
 router.post(
   "/",
   upload.fields([
     { name: "fichero1", maxCount: 1 },
-    { name: "fichero2", maxCount: 1 },
+    { name: "fichero3", maxCount: 1 },
   ]),
   renfeController.guardarExcels
 );
-// router.delete('/:idplato', platoController.deletePlato);
-// router.put('/:idplato', platoController.updatePlato);
 
 module.exports = router;

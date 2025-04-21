@@ -65,6 +65,7 @@ const StyledDialog = styled(Dialog)(({ theme }) => ({
 function CargarArchivos() {
   const [formData, setFormData] = useState({
     fichero1: null,
+    fichero3: null,
   });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMessage, setDialogMessage] = useState("");
@@ -73,8 +74,9 @@ function CargarArchivos() {
     e.preventDefault();
     const formDataToSend = new FormData();
 
-    if (formData.fichero1) {
+    if (formData.fichero1 && formData.fichero3) {
       formDataToSend.append("fichero1", formData.fichero1);
+      formDataToSend.append("fichero3", formData.fichero3);
     }
 
     try {
@@ -151,6 +153,10 @@ function CargarArchivos() {
     setFormData({ ...formData, fichero1: e.target.files[0] });
   };
 
+  const handleFileChange2 = (e) => {
+    setFormData({ ...formData, fichero3: e.target.files[0] });
+  };
+
   const handleDialogClose = () => {
     setDialogOpen(false);
   };
@@ -218,6 +224,55 @@ function CargarArchivos() {
                       type="file"
                       fullWidth
                       onChange={handleFileChange1}
+                      InputLabelProps={{
+                        shrink: true,
+                      }}
+                      required
+                      sx={{
+                        width: "100%",
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "8px",
+                          backgroundColor: "#fff",
+                          width: "100%",
+                          "& fieldset": {
+                            borderColor: "#d32f2f",
+                          },
+                          "&:hover fieldset": {
+                            borderColor: "#b71c1c",
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      marginTop: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      gutterBottom
+                      sx={{
+                        fontWeight: 600,
+                        color: "#424242",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "100%",
+                      }}
+                    >
+                      <CloudUploadIcon sx={{ mr: 1, color: "#d32f2f" }} />
+                      Archivo Cíclicas
+                    </Typography>
+                    <TextField
+                      id="fichero3"
+                      variant="outlined"
+                      type="file"
+                      fullWidth
+                      onChange={handleFileChange2}
                       InputLabelProps={{
                         shrink: true,
                       }}
