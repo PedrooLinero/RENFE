@@ -9,6 +9,7 @@ const fs = require("fs");
 class RenfeController {
   // Constantes para índices de columnas del segundo Excel
   static COLUMN_INDEXES = {
+    CODE: 11,
     NAME: 12, // Columna "NOMBRE"
     TRAIN: 13, // Columna "Tren"
   };
@@ -31,7 +32,7 @@ class RenfeController {
     N2: 28,
     N3: 29,
     "Vehículos Taller": 30,
-    "Importe CÍCLICAS": 33,
+    "Importe CÍCLICAS": 51,
   };
 
   // Método para limpiar cadenas de texto (nombres)
@@ -173,13 +174,12 @@ class RenfeController {
     }
   }
 
-  // Método para leer el segundo Excel (Fichero Seguimiento)
   static async leerExcel2(nombreExcel) {
-    // console.log(`Leyendo Excel: ${nombreExcel} con ExcelJS`);
     const filePath = path.join(__dirname, "../uploads/" + nombreExcel);
     if (!fs.existsSync(filePath)) {
       throw new Error(`El archivo no existe en la ruta: ${filePath}`);
     }
+
     try {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.readFile(filePath);
@@ -187,27 +187,31 @@ class RenfeController {
       if (!sheet) throw new Error("No se encontraron hojas en el workbook");
 
       const processedData = [];
-      // Asumiendo que las dos primeras filas son encabezados
+
       sheet.eachRow((row, rowNumber) => {
         if (rowNumber <= 2) return; // Ignorar encabezados
+
+        const codeCell = row.getCell(RenfeController.COLUMN_INDEXES.CODE + 1);
         const nameCell = row.getCell(RenfeController.COLUMN_INDEXES.NAME + 1);
         const trainCell = row.getCell(RenfeController.COLUMN_INDEXES.TRAIN + 1);
+
+        const codeValue = RenfeController.cleanString(codeCell.value);
         const nameValue = RenfeController.cleanString(nameCell.value);
         const trainValue = RenfeController.cleanTrain(trainCell.value);
-        if (!nameValue || !trainValue) return;
+
+        // Incluir todos los registros, marcando si el tren está vacío
         processedData.push({
+          code: codeValue,
           name: nameValue,
           train: trainValue,
-          _rowIndex: rowNumber, // Usar rowNumber directamente
+          isEmptyTrain: !trainValue, // Nuevo campo booleano
+          _rowIndex: rowNumber,
         });
       });
-      // console.log("Datos procesados del Excel 2:", processedData);
+
       return processedData;
     } catch (error) {
-      console.error(
-        `Error al leer el archivo ${nombreExcel} con ExcelJS:`,
-        error.message
-      );
+      console.error(`Error al leer el archivo ${nombreExcel}:`, error.message);
       throw new Error(
         `Error al leer el archivo ${nombreExcel}: ${error.message}`
       );
@@ -227,7 +231,7 @@ class RenfeController {
       const sheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(sheet, {
         header: 1,
-        raw: false,
+        raw: true,
         blankrows: false,
         defval: "",
       });
@@ -273,7 +277,7 @@ class RenfeController {
       );
 
       // Eliminar las 2 últimas filas (totales y firmas)
-      filteredData = filteredData.slice(0, -2);
+      filteredData = filteredData.slice(0, -3);
 
       return filteredData;
     } catch (error) {
@@ -284,7 +288,55 @@ class RenfeController {
     }
   }
 
-  // Método principal para procesar y guardar los Excels
+  static normalizarTexto(texto) {
+    if (typeof texto !== "string") return "";
+
+    return texto
+      .trim()
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Elimina tildes y diacríticos
+      .replace(/\s+/g, " "); // Normaliza espacios múltiples a uno solo
+  }
+
+  static compararArrays(arrayExcel3, arrayExcel2) {
+    const resultados = [];
+
+    for (const excel2 of arrayExcel2) {
+      const codigoExcel2 = String(excel2.code).trim(); // Asegurar que es string
+      const nombreExcel2 = RenfeController.normalizarTexto(excel2.name).trim();
+
+      if (codigoExcel2 === "CDIGO") continue;
+      let suma = 0;
+
+      for (const excel3 of arrayExcel3) {
+        const codigoExcel3 = String(excel3[1]).trim(); // Asegurar que es string
+        const nombreExcel3 = RenfeController.normalizarTexto(excel3[0]).trim();
+
+        if (codigoExcel2 === codigoExcel3 && nombreExcel2 === nombreExcel3) {
+          console.log(parseFloat(excel3[7]));
+          
+          suma += parseFloat(excel3[7]) || 0; // Sumar el valor de la columna 7 (índice 6)
+          // console.log(
+          //   "Coincidencia de codigo encontrado:",
+          //   codigoExcel2 + " " + nombreExcel2
+          // );
+        }
+      }
+
+      if (suma != 0) {
+        resultados.push({
+          name: nombreExcel2,
+          code: codigoExcel2,
+          suma: suma,
+        });
+      }
+    }
+
+    return resultados;
+  }
+
+  
   async guardarExcels(req, res) {
     try {
       const fichero1 = req.files["fichero1"]
@@ -295,22 +347,70 @@ class RenfeController {
         ? req.files["fichero3"][0].filename
         : null;
 
-      if (!fichero1) {
+      if (!fichero1 || !fichero3) {
         return res
           .status(400)
-          .json({ message: "Se debe subir el archivo de resumenFechas" });
+          .json({ message: "Se debe subir el archivo" });
       }
 
       const excelData1 = await RenfeController.leerExcel(fichero1);
       const excelData2 = await RenfeController.leerExcel2(fichero2);
       const excelData3 = await RenfeController.leerExcel3(fichero3);
 
-      console.log(excelData3);
+      const resultadosComparacion = RenfeController.compararArrays(
+        excelData3,
+        excelData2
+      );
+
+      console.log("Resultados de la comparación:", resultadosComparacion);
+
+      // Obtener los totales usando el método existente
+      // console.log(
+      //   "Contenido de totalsData:",
+      //   JSON.stringify(resultadosComparacion, null, 2)
+      // );
 
       // Mapa para almacenar las actualizaciones por fila del segundo archivo
       const updatesMap = {};
 
-      // Comparar datos
+      // Nueva lógica: Comparar totalsData con excelData2 y actualizar Importe CÍCLICAS
+      // Nueva lógica: Comparar totalsData con excelData2 y actualizar Importe CÍCLICAS
+      for (const totalEntry of resultadosComparacion) {
+        const code1 = totalEntry.code?.toString().trim();
+        const total = totalEntry.suma; // Ajustado según la propiedad real
+
+        // Buscar una coincidencia en excelData2 basada solo en código
+        const matchingRow = excelData2.find((rowData2) => {
+          const code2 = rowData2.code?.toString().trim();
+          return code1 === code2; // Solo comparar el código (temporalmente)
+        });
+
+        // Si hay coincidencia, preparar la actualización
+        if (matchingRow) {
+          const rowIndex = matchingRow._rowIndex - 1; // Restar 2 para corregir el desplazamiento
+
+          // Inicializar updatesMap[rowIndex] si no existe
+          if (!updatesMap[rowIndex]) {
+            updatesMap[rowIndex] = {
+              rowIndex: rowIndex,
+            };
+          }
+
+          // Asignar el valor de total a importeCiclicas
+          updatesMap[rowIndex].importeCiclicas = total;
+
+          // Depuración: Mostrar la asignación
+          // console.log(`Coincidencia encontrada para código ${code1}:`);
+          // console.log(`  Fila en excelData2: ${rowIndex + 1}`);
+          // console.log(
+          //   `  Importe CÍCLICAS: ${updatesMap[rowIndex].importeCiclicas}`
+          // );
+        } else {
+          console.log(`No se encontró coincidencia para código ${code1}`);
+        }
+      }
+
+      // Comparar datos (lógica original, sin cambios)
       for (let i = 0; i < excelData1.length; i++) {
         const city1 = RenfeController.cleanString(excelData1[i].city || "");
         const train1 = RenfeController.cleanTrain(excelData1[i].code || "");
@@ -432,61 +532,58 @@ class RenfeController {
     }
   }
 
-  // Método para actualizar el segundo Excel con los datos procesados
+  
   static async actualizarExcel2(filePath, updates) {
-    try {
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.readFile(filePath);
-      const sheet = workbook.worksheets[0];
-      if (!sheet) throw new Error("No se encontraron hojas en el workbook");
+    const ExcelJS = require("exceljs");
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(filePath);
+    const worksheet = workbook.getWorksheet(1);
 
-      updates.forEach((update) => {
-        const rowIndex = update.rowIndex;
-        const row = sheet.getRow(rowIndex);
+    // console.log(`Total de updates a procesar: ${updates.length}`);
+    // console.log(
+    //   `COLUMN_LOADS["Importe CÍCLICAS"]: ${RenfeController.COLUMN_LOADS["Importe CÍCLICAS"]}`
+    // ); // Debería ser 51
 
-        if (!row) {
-          console.error(`Error: La fila ${rowIndex} no existe en la hoja.`);
-          return;
-        }
+    for (const update of updates) {
+      // console.log(
+      //   `Procesando update para fila ${update.rowIndex + 1}:`,
+      //   JSON.stringify(update, null, 2)
+      // );
 
-        const nameInRow = RenfeController.cleanString(
-          row.getCell(RenfeController.COLUMN_INDEXES.NAME + 1).value
-        );
-        const trainInRow = RenfeController.cleanTrain(
-          row.getCell(RenfeController.COLUMN_INDEXES.TRAIN + 1).value
-        );
+      const row = worksheet.getRow(update.rowIndex + 1);
 
-        if (nameInRow !== update.name || trainInRow !== update.train) {
-          console.error(
-            `Error: La fila ${rowIndex} no coincide: Esperado ${update.name}-${update.train}, Encontrado ${nameInRow}-${trainInRow}`
-          );
-          return;
-        }
-
+      // Actualizar "Importe CÍCLICAS" (columna 51, AY)
+      if (update.importeCiclicas !== undefined) {
+        const columnIndex = RenfeController.COLUMN_LOADS["Importe CÍCLICAS"];
         // console.log(
-        //   `Actualizando fila ${rowIndex} (NOMBRE: ${nameInRow}, Tren: ${trainInRow})`
+        //   `Valor de importeCiclicas para la fila ${update.rowIndex + 1}: ${
+        //     update.importeCiclicas
+        //   }`
         // );
+        row.getCell(columnIndex).value = update.importeCiclicas;
+        // console.log(
+        //   `Escribiendo ${
+        //     update.importeCiclicas
+        //   } en la columna ${columnIndex} (Importe CÍCLICAS) de la fila ${
+        //     update.rowIndex + 1
+        //   }`
+        // );
+        const writtenValue = row.getCell(columnIndex).value;
+        // console.log(
+        //   `Valor escrito en la celda (columna ${columnIndex}, fila ${
+        //     update.rowIndex + 1
+        //   }): ${writtenValue}`
+        // );
+      }
 
-        // Actualizar columnas de "CARGAS"
-        Object.keys(RenfeController.COLUMN_LOADS).forEach((loadColumn) => {
-          const columnIndex = RenfeController.COLUMN_LOADS[loadColumn];
-          const cellLoad = sheet.getCell(rowIndex, columnIndex + 1);
-          const loadValue = update.loads[loadColumn] || 0;
-          cellLoad.value = loadValue === 0 ? "" : loadValue;
-        });
-
-        // Actualizar "Importe según CARGAS" (columna 31, índice 32 en Excel)
-        const importeCargasCell = sheet.getCell(rowIndex, 32); // Índice 32 = columna 31 + 1
-        importeCargasCell.value = update.newValue === 0 ? "" : update.newValue;
-      });
-
-      await workbook.xlsx.writeFile(filePath);
-      console.log("Archivo Excel actualizado correctamente:", filePath);
-      return filePath;
-    } catch (error) {
-      console.error("Error al actualizar el archivo Excel:", error.message);
-      throw new Error(`Error al actualizar el archivo Excel: ${error.message}`);
+      row.commit();
     }
+
+    const updatedFilePath = filePath.replace(".xlsx", "_updated.xlsx");
+    await workbook.xlsx.writeFile(updatedFilePath);
+    console.log(`Archivo guardado en: ${updatedFilePath}`);
+
+    return updatedFilePath;
   }
 }
 
