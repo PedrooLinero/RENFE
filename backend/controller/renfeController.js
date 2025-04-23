@@ -522,11 +522,6 @@ class RenfeController {
 
     console.log(numeroF);
 
-    let fCell = "";
-    let codeCell = "";
-    let nameCell = "";
-    let trainCell = "";
-
     try {
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.readFile(filePath);
@@ -539,16 +534,49 @@ class RenfeController {
         if (
           row.getCell(RenfeController.COLUMN_INDEXES.F + 1).value === numeroF
         ) {
-          fCell = row.getCell(RenfeController.COLUMN_INDEXES.F + 1);
-          codeCell = row.getCell(RenfeController.COLUMN_INDEXES.CODE + 1);
-          nameCell = row.getCell(RenfeController.COLUMN_INDEXES.NAME + 1);
-          trainCell = row.getCell(RenfeController.COLUMN_INDEXES.TRAIN + 1);
-
           processedData.push({
-            f: RenfeController.cleanString(fCell.value),
-            code: RenfeController.cleanString(codeCell.value),
-            name: RenfeController.cleanString(nameCell.value),
-            train: RenfeController.cleanTrain(trainCell.value),
+            f: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_INDEXES.F + 1).value
+            ),
+            code: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_INDEXES.CODE + 1).value
+            ),
+            name: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_INDEXES.NAME + 1).value
+            ),
+            train: RenfeController.cleanTrain(
+              row.getCell(RenfeController.COLUMN_INDEXES.TRAIN + 1).value
+            ),
+            L0: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_LOADS.L0 + 1).value
+            ),
+            LC: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_LOADS.LC + 1).value
+            ),
+            LN2: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_LOADS.LN2 + 1).value
+            ),
+            LN1: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_LOADS.LN1 + 1).value
+            ),
+            LR: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_LOADS.LR + 1).value
+            ),
+            LE: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_LOADS.LE + 1).value
+            ),
+            LF: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_LOADS.LF + 1).value
+            ),
+            LP: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_LOADS.LP + 1).value
+            ),
+            EV: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_LOADS.EV + 1).value
+            ),
+            DOT: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_LOADS.DOT + 1).value
+            ),
             _rowIndex: rowNumber,
           });
         }
