@@ -12,6 +12,10 @@ import {
   DialogContentText,
   IconButton,
   styled,
+  FormControl,
+  MenuItem,
+  Select,
+  InputLabel,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import SaveIcon from "@mui/icons-material/Save"; // Ícono para el título del modal
@@ -69,6 +73,68 @@ function CargarArchivos() {
   });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMessage, setDialogMessage] = useState("");
+  const [formData2, setFormData2] = useState("");
+
+  let listaF = [
+    "F003",
+    "F007",
+    "F008",
+    "F020",
+    "F024",
+    "F097",
+    "F110",
+    "F113",
+    "F130",
+    "F141",
+    "F142",
+    "F143",
+    "F144",
+    "F145",
+    "F147",
+    "F148",
+    "F149",
+    "F150",
+    "F151",
+    "F152",
+    "F153",
+    "F154",
+    "F165",
+    "F166",
+    "F167",
+    "F187",
+    "F188",
+    "F189",
+    "F190",
+    "F194",
+    "F199",
+    "F230",
+    "F233",
+    "F234",
+    "F243",
+    "F244",
+    "F248",
+    "F287",
+    "F288",
+    "F305",
+    "F306",
+    "F307",
+    "F309",
+    "F310",
+    "F311",
+    "F312",
+    "F313",
+    "F314",
+    "F315",
+    "F316",
+    "F318",
+    "F319",
+    "F320",
+    "F331",
+    "F332",
+    "F355",
+    "F365",
+    "F508",
+  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -161,22 +227,28 @@ function CargarArchivos() {
     setDialogOpen(false);
   };
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData2({ ...formData2, [name]: value });
+  };
+
   return (
     <>
       <Box
         sx={{
-          height: "72vh",
+          marginTop: "1.5rem",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          flexDirection: "column",
         }}
       >
-        <Box sx={{ width: "100%", maxWidth: "800px" }}>
+        <Box sx={{ width: "100%", maxWidth: "1000px" }}>
           <Typography
             variant="h4"
             align="center"
             sx={{
-              marginBottom: 4,
+              marginBottom: 2,
               fontWeight: 700,
               color: "#d32f2f",
               letterSpacing: "0.5px",
@@ -193,125 +265,208 @@ function CargarArchivos() {
               autoComplete="off"
               onSubmit={handleSubmit}
             >
-              <Grid container spacing={3} justifyContent="center">
-                {/* Fichero 1 */}
-                <Grid item xs={12} sm={8} md={6}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Typography
-                      variant="subtitle1"
-                      gutterBottom
-                      sx={{
-                        fontWeight: 600,
-                        color: "#424242",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "100%",
-                      }}
-                    >
-                      <CloudUploadIcon sx={{ mr: 1, color: "#d32f2f" }} />
-                      Archivo ResumenFechas
-                    </Typography>
-                    <TextField
-                      id="fichero1"
-                      variant="outlined"
-                      type="file"
-                      fullWidth
-                      onChange={handleFileChange1}
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                      required
-                      sx={{
-                        width: "100%",
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: "8px",
-                          backgroundColor: "#fff",
-                          width: "100%",
-                          "& fieldset": {
-                            borderColor: "#d32f2f",
-                          },
-                          "&:hover fieldset": {
-                            borderColor: "#b71c1c",
-                          },
-                        },
-                      }}
-                    />
-                  </Box>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      marginTop: 2,
-                    }}
-                  >
-                    <Typography
-                      variant="subtitle1"
-                      gutterBottom
-                      sx={{
-                        fontWeight: 600,
-                        color: "#424242",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "100%",
-                      }}
-                    >
-                      <CloudUploadIcon sx={{ mr: 1, color: "#d32f2f" }} />
-                      Archivo Cíclicas
-                    </Typography>
-                    <TextField
-                      id="fichero3"
-                      variant="outlined"
-                      type="file"
-                      fullWidth
-                      onChange={handleFileChange2}
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                      required
-                      sx={{
-                        width: "100%",
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: "8px",
-                          backgroundColor: "#fff",
-                          width: "100%",
-                          "& fieldset": {
-                            borderColor: "#d32f2f",
-                          },
-                          "&:hover fieldset": {
-                            borderColor: "#b71c1c",
-                          },
-                        },
-                      }}
-                    />
-                  </Box>
-                </Grid>
-
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "1rem",
+                }}
+              >
                 <Box
                   sx={{
                     display: "flex",
-                    justifyContent: "center",
-                    width: "100%",
-                    mt: 2,
+                    flexDirection: "column",
+                    alignItems: "center",
                   }}
                 >
-                  <StyledButton
-                    variant="contained"
-                    type="submit"
-                    startIcon={<CloudUploadIcon />}
+                  <Typography
+                    variant="subtitle1"
+                    gutterBottom
+                    sx={{
+                      fontWeight: 600,
+                      color: "#424242",
+                      display: "flex",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
                   >
-                    Actualizar Plantilla
-                  </StyledButton>
+                    <CloudUploadIcon sx={{ mr: 1, color: "#d32f2f" }} />
+                    Archivo ResumenFechas
+                  </Typography>
+                  <TextField
+                    id="fichero1"
+                    variant="outlined"
+                    type="file"
+                    fullWidth
+                    onChange={handleFileChange1}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    required
+                    sx={{
+                      width: "100%",
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "8px",
+                        backgroundColor: "#fff",
+                        width: "100%",
+                        "& fieldset": {
+                          borderColor: "#d32f2f",
+                        },
+                        "&:hover fieldset": {
+                          borderColor: "#b71c1c",
+                        },
+                      },
+                    }}
+                  />
                 </Box>
-              </Grid>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    gutterBottom
+                    sx={{
+                      fontWeight: 600,
+                      color: "#424242",
+                      display: "flex",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <CloudUploadIcon sx={{ mr: 1, color: "#d32f2f" }} />
+                    Archivo Cíclicas
+                  </Typography>
+                  <TextField
+                    id="fichero3"
+                    variant="outlined"
+                    type="file"
+                    fullWidth
+                    onChange={handleFileChange2}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    required
+                    sx={{
+                      width: "100%",
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "8px",
+                        backgroundColor: "#fff",
+                        width: "100%",
+                        "& fieldset": {
+                          borderColor: "#d32f2f",
+                        },
+                        "&:hover fieldset": {
+                          borderColor: "#b71c1c",
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+              </Box>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  width: "100%",
+                  mt: 3,
+                }}
+              >
+                <StyledButton
+                  variant="contained"
+                  type="submit"
+                  startIcon={<CloudUploadIcon />}
+                >
+                  Actualizar Plantilla
+                </StyledButton>
+              </Box>
+            </Box>
+          </StyledPaper>
+        </Box>
+
+        {/* Seleccionable para las facturas */}
+        <Box sx={{ width: "100%", maxWidth: "1000px", margin: "1.5rem" }}>
+          <Typography
+            variant="h4"
+            align="center"
+            sx={{
+              marginBottom: 2,
+              fontWeight: 700,
+              color: "#d32f2f",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Descargar facturas
+          </Typography>
+
+          <StyledPaper elevation={3}>
+            <Box
+              component="form"
+              sx={{ width: "100%" }}
+              noValidate
+              autoComplete="off"
+              onSubmit={handleSubmit}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  gutterBottom
+                  sx={{
+                    fontWeight: 600,
+                    color: "#424242",
+                    display: "flex",
+                    alignItems: "center",
+                    width: "100%",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  <CloudUploadIcon sx={{ mr: 1, color: "#d32f2f" }} />
+                  Selecciona un tipo de factura
+                </Typography>
+                <FormControl fullWidth>
+                  <Select
+                    id="select-tipo"
+                    name="tipo"
+                    value={formData2}
+                    onChange={handleChange}
+                    fullWidth
+                    required
+                  >
+                    {listaF.map((tipo) => (
+                      <MenuItem value={tipo}>{tipo}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  width: "100%",
+                  mt: 2,
+                }}
+              >
+                <StyledButton
+                  variant="contained"
+                  type="submit"
+                  startIcon={<CloudUploadIcon />}
+                >
+                  Descargar factura
+                </StyledButton>
+              </Box>
             </Box>
           </StyledPaper>
         </Box>
