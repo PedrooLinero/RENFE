@@ -26,5 +26,6 @@ router.post(
   ]),
   renfeController.guardarExcels
 );
+router.post("/descargar", renfeController.generarPDF);
 
 module.exports = router;

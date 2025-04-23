@@ -73,7 +73,7 @@ function CargarArchivos() {
   });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMessage, setDialogMessage] = useState("");
-  const [formData2, setFormData2] = useState("");
+  const [formData2, setFormData2] = useState({ anexo: "" });
 
   let listaF = [
     "F003",
@@ -206,6 +206,33 @@ function CargarArchivos() {
           window.URL.revokeObjectURL(url);
           setDialogMessage("Archivo guardado con éxito");
         }
+      }
+    } catch (error) {
+      setDialogOpen(true);
+      setDialogMessage(
+        error.message || "Error de red. Inténtalo de nuevo más tarde."
+      );
+    }
+  };
+
+  const handleSubmit1 = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch(apiUrl + "/datos/descargar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData2),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.mensaje);
+      } else {
+        alert(data.mensaje);
       }
     } catch (error) {
       setDialogOpen(true);
@@ -402,7 +429,7 @@ function CargarArchivos() {
               letterSpacing: "0.5px",
             }}
           >
-            Descargar facturas
+            Descargar Anexo de Factura
           </Typography>
 
           <StyledPaper elevation={3}>
@@ -411,7 +438,7 @@ function CargarArchivos() {
               sx={{ width: "100%" }}
               noValidate
               autoComplete="off"
-              onSubmit={handleSubmit}
+              onSubmit={handleSubmit1}
             >
               <Box
                 sx={{
@@ -433,13 +460,13 @@ function CargarArchivos() {
                   }}
                 >
                   <CloudUploadIcon sx={{ mr: 1, color: "#d32f2f" }} />
-                  Selecciona un tipo de factura
+                  Selecciona un anexo de factura
                 </Typography>
                 <FormControl fullWidth>
                   <Select
-                    id="select-tipo"
-                    name="tipo"
-                    value={formData2}
+                    id="select-anexo"
+                    name="anexo"
+                    value={formData2.anexo}
                     onChange={handleChange}
                     fullWidth
                     required
@@ -464,7 +491,7 @@ function CargarArchivos() {
                   type="submit"
                   startIcon={<CloudUploadIcon />}
                 >
-                  Descargar factura
+                  Descargar anexo
                 </StyledButton>
               </Box>
             </Box>

@@ -398,7 +398,8 @@ class RenfeController {
           };
         }
 
-        updatesMap[rowIndex].newValue = (updatesMap[rowIndex].newValue || 0) + total;
+        updatesMap[rowIndex].newValue =
+          (updatesMap[rowIndex].newValue || 0) + total;
 
         if (updatesMap[rowIndex].loads.hasOwnProperty(category)) {
           updatesMap[rowIndex].loads[category] = total;
@@ -424,13 +425,9 @@ class RenfeController {
         });
       }
 
-      res.download(
-        updatedFilePath,
-        "resultado.xlsx",
-        (err) => {
-          if (err) console.error("Error al descargar:", err);
-        }
-      );
+      res.download(updatedFilePath, "resultado.xlsx", (err) => {
+        if (err) console.error("Error al descargar:", err);
+      });
     } catch (error) {
       console.error("Error al procesar los archivos:", error.message);
       return res.status(500).json({
@@ -490,7 +487,8 @@ class RenfeController {
         // Actualizar "Importe según CARGAS" (columna 31, índice 32 en Excel)
         if (update.newValue !== undefined) {
           const importeCargasCell = sheet.getCell(rowIndex, 32);
-          importeCargasCell.value = update.newValue === 0 ? "" : update.newValue;
+          importeCargasCell.value =
+            update.newValue === 0 ? "" : update.newValue;
           // console.log(`Escribiendo Importe según CARGAS=${update.newValue} en fila ${rowIndex}, columna 32`);
         }
 
@@ -498,7 +496,8 @@ class RenfeController {
         if (update.importeCiclicas !== undefined) {
           const columnIndex = RenfeController.COLUMN_LOADS["Importe CÍCLICAS"];
           const cellCiclicas = sheet.getCell(rowIndex, columnIndex + 1);
-          cellCiclicas.value = update.importeCiclicas === 0 ? "" : update.importeCiclicas;
+          cellCiclicas.value =
+            update.importeCiclicas === 0 ? "" : update.importeCiclicas;
           // console.log(`Escribiendo Importe CÍCLICAS=${update.importeCiclicas} en fila ${rowIndex}, columna ${columnIndex + 1} (AY)`);
         }
       });
@@ -511,6 +510,15 @@ class RenfeController {
       console.error("Error al actualizar el archivo Excel:", error.message);
       throw new Error(`Error al actualizar el archivo Excel: ${error.message}`);
     }
+  }
+
+  async generarPDF(req, res) {
+    const { anexo } = req.body;
+
+    console.log("Numero de anexo: " + anexo);
+
+    try {
+    } catch (error) {}
   }
 }
 
