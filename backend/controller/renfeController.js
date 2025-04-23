@@ -9,6 +9,7 @@ const fs = require("fs");
 class RenfeController {
   // Constantes para índices de columnas del segundo Excel
   static COLUMN_INDEXES = {
+    F: 8,
     CODE: 11, // Columna "CÓDIGO"
     NAME: 12, // Columna "NOMBRE"
     TRAIN: 13, // Columna "Tren"
@@ -512,10 +513,68 @@ class RenfeController {
     }
   }
 
+  static async leerResultado(nombreExcel, numeroF) {
+    const filePath = path.join(__dirname, "../uploads/", nombreExcel);
+
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`El archivo no existe en la ruta: ${filePath}`);
+    }
+
+    console.log(numeroF);
+
+    let fCell = "";
+    let codeCell = "";
+    let nameCell = "";
+    let trainCell = "";
+
+    try {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(filePath);
+      const sheet = workbook.worksheets[0];
+      if (!sheet) throw new Error("No se encontraron hojas en el workbook");
+
+      const processedData = [];
+      sheet.eachRow((row, rowNumber) => {
+        if (rowNumber <= 2) return; // Ignorar encabezados
+        if (
+          row.getCell(RenfeController.COLUMN_INDEXES.F + 1).value === numeroF
+        ) {
+          fCell = row.getCell(RenfeController.COLUMN_INDEXES.F + 1);
+          codeCell = row.getCell(RenfeController.COLUMN_INDEXES.CODE + 1);
+          nameCell = row.getCell(RenfeController.COLUMN_INDEXES.NAME + 1);
+          trainCell = row.getCell(RenfeController.COLUMN_INDEXES.TRAIN + 1);
+
+          processedData.push({
+            f: RenfeController.cleanString(fCell.value),
+            code: RenfeController.cleanString(codeCell.value),
+            name: RenfeController.cleanString(nameCell.value),
+            train: RenfeController.cleanTrain(trainCell.value),
+            _rowIndex: rowNumber,
+          });
+        }
+      });
+      return processedData;
+    } catch (error) {
+      console.error(`Error al leer el archivo ${nombreExcel}:`, error.message);
+      throw new Error(
+        `Error al leer el archivo ${nombreExcel}: ${error.message}`
+      );
+    }
+  }
+
   async generarPDF(req, res) {
     const { anexo } = req.body;
 
-    console.log("Numero de anexo: " + anexo);
+    const resultado = await RenfeController.leerResultado(
+      "Base_updated.xlsx",
+      anexo
+    );
+
+    // console.log("Numero de anexo: " + anexo);
+    console.log("Resultado: " + resultado);
+    resultado.forEach((row) => {
+      console.log(row);
+    });
 
     try {
     } catch (error) {}
