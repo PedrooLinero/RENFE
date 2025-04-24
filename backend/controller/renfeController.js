@@ -5,14 +5,17 @@ const ExcelJS = require("exceljs");
 const XLSX = require("xlsx");
 const path = require("path");
 const fs = require("fs");
+const puppeteer = require("puppeteer");
 
 class RenfeController {
   // Constantes para índices de columnas del segundo Excel
   static COLUMN_INDEXES = {
     F: 8,
-    CODE: 11, // Columna "CÓDIGO"
-    NAME: 12, // Columna "NOMBRE"
-    TRAIN: 13, // Columna "Tren"
+    CODE: 11,
+    NAME: 12,
+    TRAIN: 13,
+    NUMERO_PEDIDO: 76,
+    FACTURA_80: 62,
   };
 
   static COLUMN_LOADS = {
@@ -102,7 +105,7 @@ class RenfeController {
           const normalizedName = nameValue.replace(/\s+-\s+/g, " - ");
           const parts = normalizedName.split(" - ");
           if (parts.length === 2) {
-            currentName = RenfeController.cleanString(parts[0]);
+            currentName = parts[0];
             currentTrain = RenfeController.cleanTrain(parts[1]);
             currentRowIndex = i;
           }
@@ -516,6 +519,11 @@ class RenfeController {
   static async leerResultado(nombreExcel, numeroF) {
     const filePath = path.join(__dirname, "../uploads/", nombreExcel);
 
+    const excelResumenFechas = path.join(
+      __dirname,
+      "../uploads/resumenFechas.xls"
+    );
+
     if (!fs.existsSync(filePath)) {
       throw new Error(`El archivo no existe en la ruta: ${filePath}`);
     }
@@ -528,59 +536,119 @@ class RenfeController {
       const sheet = workbook.worksheets[0];
       if (!sheet) throw new Error("No se encontraron hojas en el workbook");
 
+      const workbook2 = XLSX.readFile(excelResumenFechas, { cellDates: true });
+      const sheetName = workbook2.SheetNames[0];
+      if (!sheetName) throw new Error("No se encontraron hojas en el workbook");
+
+      const sheet2 = workbook2.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(sheet2, {
+        header: 1,
+        raw: false,
+        blankrows: false,
+        defval: "",
+      });
+
+      let currentName = "";
+      let currentTrain = "";
+      let currentRowIndex = -1;
+
+      const mapaTotal = new Map();
+
       const processedData = [];
+      const processedKeys = new Set(); // Para controlar duplicados
+
+      // Primer bucle: Procesar data para llenar mapaTotal
+      for (let i = 1; i < data.length; i++) {
+        let fila = data[i];
+        const nameValue = fila[0];
+
+        if (nameValue && nameValue.includes(" - ")) {
+          const normalizedName = nameValue.replace(/\s+-\s+/g, " - ");
+          const parts = normalizedName.split(" - ");
+          if (parts.length === 2) {
+            currentName = parts[0].trim();
+            currentTrain = RenfeController.cleanTrain(parts[1]);
+            currentRowIndex = i;
+          }
+        }
+
+        const category = fila[0];
+        const rowLength = fila.length;
+        const totalColumnIndex = rowLength - 3;
+        const totalValue = parseFloat(fila[totalColumnIndex]);
+
+        if (!isNaN(totalValue)) {
+          const clave = `${currentName} - ${currentTrain}`;
+
+          if (!mapaTotal.has(clave)) {
+            mapaTotal.set(clave, {});
+          }
+
+          const categorias = mapaTotal.get(clave);
+          categorias[category] = (categorias[category] || 0) + totalValue;
+        }
+      }
+
+      // Segundo bucle: Procesar filas de Excel
       sheet.eachRow((row, rowNumber) => {
-        if (rowNumber <= 2) return; // Ignorar encabezados
-        if (
-          row.getCell(RenfeController.COLUMN_INDEXES.F + 1).value === numeroF
-        ) {
+        if (rowNumber <= 2) return; // Saltar cabeceras
+
+        const fValue = row.getCell(RenfeController.COLUMN_INDEXES.F + 1).value;
+        if (fValue !== numeroF) return;
+
+        const excelName = row
+          .getCell(RenfeController.COLUMN_INDEXES.NAME + 1)
+          .value.trim();
+        const excelTrain = RenfeController.cleanTrain(
+          row.getCell(RenfeController.COLUMN_INDEXES.TRAIN + 1).value
+        );
+
+        const clave = `${excelName} - ${excelTrain}`;
+
+        // Verificar coincidencia y no duplicados
+        if (mapaTotal.has(clave) && !processedKeys.has(clave)) {
+          const categorias = mapaTotal.get(clave);
+
           processedData.push({
-            f: RenfeController.cleanString(
-              row.getCell(RenfeController.COLUMN_INDEXES.F + 1).value
-            ),
+            f: RenfeController.cleanString(fValue),
             code: RenfeController.cleanString(
               row.getCell(RenfeController.COLUMN_INDEXES.CODE + 1).value
             ),
-            name: RenfeController.cleanString(
-              row.getCell(RenfeController.COLUMN_INDEXES.NAME + 1).value
+            name: excelName,
+            train: excelTrain,
+            L0: categorias.L0 || 0,
+            LC: categorias.LC || 0,
+            LN2: categorias.LN2 || 0,
+            LN1: categorias.LN1 || 0,
+            LR: categorias.LR || 0,
+            LE: categorias.LE || 0,
+            LF: categorias.LF || 0,
+            LP: categorias.LP || 0,
+            EV: categorias.EV || 0,
+            DOT: categorias.DOT || 0,
+            IMP_L0: 0,
+            IMP_LC: 141.65,
+            IMP_LN2: 56.66,
+            IMP_LN1: 23.61,
+            IMP_LR: 7.08,
+            IMP_LE: 21.25,
+            IMP_LF: 4.72,
+            IMP_LP: 1.89,
+            IMP_EV: 1.13,
+            IMP_DOT: 0.92,
+            FACTURA_80: row.getCell(
+              RenfeController.COLUMN_INDEXES.FACTURA_80 + 1
+            ).value,
+            NUMERO_PEDIDO: RenfeController.cleanString(
+              row.getCell(RenfeController.COLUMN_INDEXES.NUMERO_PEDIDO + 1)
+                .value
             ),
-            train: RenfeController.cleanTrain(
-              row.getCell(RenfeController.COLUMN_INDEXES.TRAIN + 1).value
-            ),
-            L0: RenfeController.cleanString(
-              row.getCell(RenfeController.COLUMN_LOADS.L0 + 1).value
-            ),
-            LC: RenfeController.cleanString(
-              row.getCell(RenfeController.COLUMN_LOADS.LC + 1).value
-            ),
-            LN2: RenfeController.cleanString(
-              row.getCell(RenfeController.COLUMN_LOADS.LN2 + 1).value
-            ),
-            LN1: RenfeController.cleanString(
-              row.getCell(RenfeController.COLUMN_LOADS.LN1 + 1).value
-            ),
-            LR: RenfeController.cleanString(
-              row.getCell(RenfeController.COLUMN_LOADS.LR + 1).value
-            ),
-            LE: RenfeController.cleanString(
-              row.getCell(RenfeController.COLUMN_LOADS.LE + 1).value
-            ),
-            LF: RenfeController.cleanString(
-              row.getCell(RenfeController.COLUMN_LOADS.LF + 1).value
-            ),
-            LP: RenfeController.cleanString(
-              row.getCell(RenfeController.COLUMN_LOADS.LP + 1).value
-            ),
-            EV: RenfeController.cleanString(
-              row.getCell(RenfeController.COLUMN_LOADS.EV + 1).value
-            ),
-            DOT: RenfeController.cleanString(
-              row.getCell(RenfeController.COLUMN_LOADS.DOT + 1).value
-            ),
-            _rowIndex: rowNumber,
           });
+
+          processedKeys.add(clave); // Registrar clave como procesada
         }
       });
+
       return processedData;
     } catch (error) {
       console.error(`Error al leer el archivo ${nombreExcel}:`, error.message);
@@ -598,11 +666,92 @@ class RenfeController {
       anexo
     );
 
-    // console.log("Numero de anexo: " + anexo);
-    console.log("Resultado: " + resultado);
-    resultado.forEach((row) => {
-      console.log(row);
-    });
+    const opciones = { year: "numeric", month: "long" };
+    const fechaFormateada = new Date().toLocaleDateString("es-ES", opciones);
+
+    (async () => {
+      // Crear HTML con los datos
+      let html = `
+        <html>
+          <head>
+            <style>
+              table { width: 100%; border-collapse: collapse; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f2f2f2; }
+            </style>
+          </head>
+          <body>
+
+            <p>Nº de pedido ${resultado[0]["NUMERO_PEDIDO"]}</p></br>
+
+            <h4>ANEXO FACTURACION</h4>
+            <p>Resumen mensual de operaciones de limpieza</p>
+            <p>Mes/año ${fechaFormateada} ${resultado[0]["f"]}</p>
+            `;
+      resultado.forEach((item) => {
+        html += `
+        <table>
+              <tr>
+                <th>CENTRO</th>
+                <th>CODIGO dependencia o SERIE tren</th>
+                <th>TIPO DE OPERACIÓN</th>
+                <th>Nº DE OPERACIONES</th>
+                <th>IMPORTE UNITARIO</th>
+                <th>IMPORTE TOTAL</th>
+              </tr>
+              <tr>
+                <td>${item["code"]}</td>
+                <td>${item["train"]}</td>
+                <td>Literal de la operación de limpieza realizada</td>
+                <td>Nº de operaciones realizadas</td>
+                <td>Importe unitario del tipo de operación realizada</td>
+                <td>Nº de operaciones x importe unitario</td>
+              </tr>
+              <tr>
+                <td>${item["name"]}</td>
+                <td></td>
+                <td>L0</td>
+                <td>${item["L0"]}</td>
+                <td>${item["IMP_L0"]}</td>
+                <td>${parseFloat((item["L0"] * item["IMP_L0"]).toFixed(2))}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td></td>
+                <td>LC</td>
+                <td>${item["LC"]}</td>
+                <td>${item["IMP_LC"]}</td>
+                <td>${parseFloat((item["LC"] * item["IMP_LC"]).toFixed(2))}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td></td>
+                <td>LN2</td>
+                <td>${item["LN2"]}</td>
+                <td>${item["IMP_LN2"]}</td>
+                <td>${parseFloat(
+                  (item["LN2"] * item["IMP_LN2"]).toFixed(2)
+                )}</td>
+              </tr>
+          </table></br>
+        `;
+      });
+
+      html += `</body></html>`;
+
+      // Generar PDF
+      const browser = await puppeteer.launch();
+      const page = await browser.newPage();
+      await page.setContent(html);
+      await page.pdf({
+        path: "archivo.pdf",
+        format: "A4",
+        margin: { top: "20px", right: "20px", bottom: "20px", left: "20px" },
+      });
+
+      await browser.close();
+      console.log("PDF generado con Puppeteer!");
+    })();
 
     try {
     } catch (error) {}
