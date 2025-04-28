@@ -14,6 +14,23 @@ class RenfeController {
     CODE: 11,
     NAME: 12,
     TRAIN: 13,
+    IMP_L0: 31,
+    IMP_LC: 32,
+    IMP_LN2: 33,
+    IMP_LN1: 34,
+    IMP_LCAB: 35,
+    IMP_LR: 36,
+    IMP_EV: 37,
+    IMP_DOT: 38,
+    IMP_LE: 39,
+    IMP_LET: 40,
+    IMP_LF: 41,
+    IMP_LP: 42,
+    IMP_LT: 43,
+    IMP_N1: 44,
+    IMP_N2: 45,
+    IMP_N3: 46,
+    IMP_VEHICULOS: 47,
     NUMERO_PEDIDO: 76,
     FACTURA_80: 62,
   };
@@ -626,16 +643,32 @@ class RenfeController {
             LP: categorias.LP || 0,
             EV: categorias.EV || 0,
             DOT: categorias.DOT || 0,
-            IMP_L0: 0,
-            IMP_LC: 141.65,
-            IMP_LN2: 56.66,
-            IMP_LN1: 23.61,
-            IMP_LR: 7.08,
-            IMP_LE: 21.25,
-            IMP_LF: 4.72,
-            IMP_LP: 1.89,
-            IMP_EV: 1.13,
-            IMP_DOT: 0.92,
+            IMP_L0: row.getCell(RenfeController.COLUMN_INDEXES.IMP_L0 + 1)
+              .value,
+            IMP_LC: row.getCell(RenfeController.COLUMN_INDEXES.IMP_LC + 1)
+              .value,
+            IMP_LN2: row.getCell(RenfeController.COLUMN_INDEXES.IMP_LN2 + 1)
+              .value,
+            IMP_LN1: row.getCell(RenfeController.COLUMN_INDEXES.IMP_LN1 + 1)
+              .value,
+            IMP_LCAB: row.getCell(RenfeController.COLUMN_INDEXES.IMP_LCAB + 1)
+              .value,
+            IMP_LR: row.getCell(RenfeController.COLUMN_INDEXES.IMP_LR + 1)
+              .value,
+            IMP_EV: row.getCell(RenfeController.COLUMN_INDEXES.IMP_EV + 1)
+              .value,
+            IMP_DOT: row.getCell(RenfeController.COLUMN_INDEXES.IMP_DOT + 1)
+              .value,
+            IMP_LE: row.getCell(RenfeController.COLUMN_INDEXES.IMP_LE + 1)
+              .value,
+            IMP_LET: row.getCell(RenfeController.COLUMN_INDEXES.IMP_LET + 1)
+              .value,
+            IMP_LF: row.getCell(RenfeController.COLUMN_INDEXES.IMP_LF + 1)
+              .value,
+            IMP_LP: row.getCell(RenfeController.COLUMN_INDEXES.IMP_LP + 1)
+              .value,
+            IMP_LT: row.getCell(RenfeController.COLUMN_INDEXES.IMP_LT + 1)
+              .value,
             FACTURA_80: row.getCell(
               RenfeController.COLUMN_INDEXES.FACTURA_80 + 1
             ).value,
@@ -669,6 +702,11 @@ class RenfeController {
     const opciones = { year: "numeric", month: "long" };
     const fechaFormateada = new Date().toLocaleDateString("es-ES", opciones);
 
+    let centroActual = "";
+    let totalCentro = 0;
+    let total = 0;
+    let totalFactura80 = 0;
+
     (async () => {
       // Crear HTML con los datos
       let html = `
@@ -688,7 +726,47 @@ class RenfeController {
             <p>Resumen mensual de operaciones de limpieza</p>
             <p>Mes/año ${fechaFormateada} ${resultado[0]["f"]}</p>
             `;
-      resultado.forEach((item) => {
+      resultado.forEach((item, index) => {
+        let sumaTren = (
+          parseFloat(item["L0"] * item["IMP_L0"]) +
+          parseFloat(item["LC"] * item["IMP_LC"]) +
+          parseFloat(item["LN2"] * item["IMP_LN2"]) +
+          parseFloat(item["LN1"] * item["IMP_LN1"]) +
+          parseFloat(item["LR"] * item["IMP_LR"]) +
+          parseFloat(item["LE"] * item["IMP_LE"]) +
+          parseFloat(item["LF"] * item["IMP_LF"]) +
+          parseFloat(item["LP"] * item["IMP_LP"]) +
+          parseFloat(item["EV"] * item["IMP_EV"]) +
+          parseFloat(item["DOT"] * item["IMP_DOT"])
+        ).toFixed(2);
+
+        total += parseFloat(sumaTren);
+
+        totalFactura80 += parseFloat(item["FACTURA_80"]);
+
+        // Si es un nuevo centro
+        if (centroActual !== item["code"]) {
+          // Si no es el primer elemento, mostrar el total del centro anterior
+          if (index > 0) {
+            html += `
+            <table>
+              <tr>
+                <td>${item["name"]}</td>
+                <td>TOTAL CENTRO ${centroActual}</td>
+                <td>${totalCentro.toFixed(2)}</td>
+              </tr>
+            </table></br>
+      `;
+          }
+
+          // Reiniciar para el nuevo centro
+          centroActual = item["code"];
+          totalCentro = 0;
+        }
+
+        // Sumar al total del centro actual
+        totalCentro += parseFloat(sumaTren);
+
         html += `
         <table>
               <tr>
@@ -733,9 +811,100 @@ class RenfeController {
                   (item["LN2"] * item["IMP_LN2"]).toFixed(2)
                 )}</td>
               </tr>
+              <tr>
+                <td></td>
+                <td></td>
+                <td>LN1</td>
+                <td>${item["LN1"]}</td>
+                <td>${item["IMP_LN1"]}</td>
+                <td>${parseFloat(
+                  (item["LN1"] * item["IMP_LN1"]).toFixed(2)
+                )}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td></td>
+                <td>LR</td>
+                <td>${item["LR"]}</td>
+                <td>${item["IMP_LR"]}</td>
+                <td>${parseFloat((item["LR"] * item["IMP_LR"]).toFixed(2))}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td></td>
+                <td>LE</td>
+                <td>${item["LE"]}</td>
+                <td>${item["IMP_LE"]}</td>
+                <td>${parseFloat((item["LE"] * item["IMP_LE"]).toFixed(2))}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td></td>
+                <td>LF</td>
+                <td>${item["LF"]}</td>
+                <td>${item["IMP_LF"]}</td>
+                <td>${parseFloat((item["LF"] * item["IMP_LF"]).toFixed(2))}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td></td>
+                <td>LP</td>
+                <td>${item["LP"]}</td>
+                <td>${item["IMP_LP"]}</td>
+                <td>${parseFloat((item["LP"] * item["IMP_LP"]).toFixed(2))}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td></td>
+                <td>EV</td>
+                <td>${item["EV"]}</td>
+                <td>${item["IMP_EV"]}</td>
+                <td>${parseFloat((item["EV"] * item["IMP_EV"]).toFixed(2))}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td></td>
+                <td>DOT</td>
+                <td>${item["DOT"]}</td>
+                <td>${item["IMP_DOT"]}</td>
+                <td>${parseFloat(
+                  (item["DOT"] * item["IMP_DOT"]).toFixed(2)
+                )}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>SUBTOTAL SERIE ${item["train"]} del CENTRO ${
+          item["name"]
+        }</td>
+                <td>${sumaTren}</td>
+              </tr>
           </table></br>
         `;
+
+        // Si es el último elemento, mostrar el total del último centro
+        if (index === resultado.length - 1) {
+          html += `
+            <table>
+              <tr>
+                <td>${item["name"]}</td>
+                <td>TOTAL CENTRO ${centroActual}</td>
+                <td>${totalCentro.toFixed(2)}</td>
+              </tr>
+            </table></br></br>        
+          `;
+        }
       });
+
+      html += `
+        <div>
+          <p>${anexo} | ${total.toFixed(2)}</p>
+          <p>FACTURA DEL 80%: ${totalFactura80.toFixed(2)}</p>
+          <p>FACTURA DEL 20%: ${(total - totalFactura80).toFixed(2)}</p>
+        </div></br>
+      `;
 
       html += `</body></html>`;
 
@@ -743,18 +912,29 @@ class RenfeController {
       const browser = await puppeteer.launch();
       const page = await browser.newPage();
       await page.setContent(html);
-      await page.pdf({
-        path: "archivo.pdf",
+
+      // Ruta relativa a la carpeta uploads
+      const pdfPath = path.join(__dirname, "../uploads", "archivo.pdf");
+
+      const pdf = await page.pdf({
+        path: pdfPath, // Cambiado para usar la nueva ruta
         format: "A4",
         margin: { top: "20px", right: "20px", bottom: "20px", left: "20px" },
       });
 
       await browser.close();
-      console.log("PDF generado con Puppeteer!");
+      console.log(`PDF generado con Puppeteer y guardado en: ${pdfPath}`);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", "attachment; filename=archivo.pdf");
+      res.send(pdf);
     })();
 
     try {
-    } catch (error) {}
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Error al generar PDF");
+    }
   }
 }
 

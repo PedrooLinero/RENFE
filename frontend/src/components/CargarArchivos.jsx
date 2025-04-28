@@ -227,12 +227,54 @@ function CargarArchivos() {
         body: JSON.stringify(formData2),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
-        alert(data.mensaje);
+        // Obtener el blob del PDF
+
+        setDialogOpen(true);
+        setDialogMessage("Procesando...");
+
+        const blob = await response.blob();
+
+        if (window.showSaveFilePicker) {
+          const suggestedName = "archivo.pdf";
+          const fileHandle = await window.showSaveFilePicker({
+            suggestedName: suggestedName,
+            types: [
+              {
+                description: "Archivo Excel",
+                accept: {
+                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                    [".pdf"],
+                },
+              },
+            ],
+          });
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          setDialogMessage("Archivo guardado con éxito");
+        } else {
+          const defaultName = "archivo.pdf";
+          const userFileName = prompt(
+            "Introduce el nombre del archivo (incluye .pdf):",
+            defaultName
+          );
+          const fileName =
+            userFileName && userFileName.trim() ? userFileName : defaultName;
+
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          setDialogMessage("Archivo guardado con éxito");
+        }
       } else {
-        alert(data.mensaje);
+        const data = await response.json();
+        alert(data.mensaje || "Error al generar el PDF");
       }
     } catch (error) {
       setDialogOpen(true);
