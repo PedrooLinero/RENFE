@@ -337,7 +337,8 @@ function CargarArchivos() {
               <Box
                 sx={{
                   display: "flex",
-                  flexDirection: "row",
+                  flexDirection: {xs: "column", lg: "row"},
+                  gap: "1rem",
                   alignItems: "center",
                   justifyContent: "space-between",
                   marginBottom: "1rem",

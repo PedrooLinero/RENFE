@@ -713,18 +713,102 @@ class RenfeController {
         <html>
           <head>
             <style>
-              table { width: 100%; border-collapse: collapse; }
-              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              th { background-color: #f2f2f2; }
+              * {
+                font-family: Arial;
+                font-size: 12px;
+              }
+              table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+              th, td { border: 1px solid black; text-align: left;}
+              td {font-size: 12px; padding: 0.1rem;}
+              th { background-color: #bdd7ee; padding: 0.2rem;}
+              .resaltado {
+                background-color: yellow;
+                font-style: normal;
+              }
+              .informacion {
+                display: inline-block;
+                font-style: oblique;
+                font-weight: bold;
+                margin-bottom: 0.3rem;
+                margin-top: 0.3rem;
+              }
+              h4 {
+                margin-top: 1rem;
+                margin-bottom: 0.8rem;
+              }
+              .totalTren {
+                 background-color: #ddebf7;
+              }
+
+              .totalCentro {
+                text-align: right; background-color: #ededed;
+              }
+
+              .totalCentro_datos {
+                padding: 4px;
+              }
+
+              .datos {
+                text-align: right;
+              }
+
+              .totales {
+                display: flex; flex-direction: row;
+              }
+
+              .vacio {
+                width: 60%;
+              }
+
+              .nombreTotal, .nombreTotal80, .nombreTotal20 {
+                font-weight: bold;
+                width: 20%;
+                border: 1px solid black;
+                text-align: center;
+                font-style: oblique;
+              }
+
+              .nombreTotal {
+                background-color: #d9e1f2;
+              }
+
+              .nombreTotal80 {
+                background-color: #ededed;
+              }
+
+              .nombreTotal20 {
+                background-color: #f8cbad;
+              }
+
+              .total {
+                width: 20%;
+                text-align: right;
+                background-color: #d9e1f2;
+                border: 1px solid black;
+              }
+
+              .total80 {
+                width: 20%;
+                text-align: right;
+                background-color: #ededed;
+                border: 1px solid black;
+              }
+
+              .total20 {
+                width: 20%;
+                text-align: right;
+                background-color: #f8cbad;
+                border: 1px solid black;
+              }
             </style>
           </head>
           <body>
 
-            <p>Nº de pedido ${resultado[0]["NUMERO_PEDIDO"]}</p></br>
+            <p class='informacion'>Nº de pedido <span class='resaltado'>${resultado[0]["NUMERO_PEDIDO"]}</span></p>
 
             <h4>ANEXO FACTURACION</h4>
-            <p>Resumen mensual de operaciones de limpieza</p>
-            <p>Mes/año ${fechaFormateada} ${resultado[0]["f"]}</p>
+            <p class='informacion'>Resumen mensual de operaciones de limpieza</p></br>
+            <p class='informacion'>Mes/año | ${fechaFormateada} | <span class='resaltado'>${resultado[0]["f"]}</span></p></br>
             `;
       resultado.forEach((item, index) => {
         let sumaTren = (
@@ -749,13 +833,13 @@ class RenfeController {
           // Si no es el primer elemento, mostrar el total del centro anterior
           if (index > 0) {
             html += `
-            <table>
-              <tr>
-                <td>${item["name"]}</td>
-                <td>TOTAL CENTRO ${centroActual}</td>
-                <td>${totalCentro.toFixed(2)}</td>
-              </tr>
-            </table></br>
+            <div class="totalCentro">
+              <p class='totalCentro_datos'>${
+                item["name"]
+              } | <span class='resaltado'>TOTAL CENTRO ${centroActual} | ${totalCentro.toFixed(
+              2
+            )}</span></p>
+            </div></br>
       `;
           }
 
@@ -789,25 +873,29 @@ class RenfeController {
                 <td>${item["name"]}</td>
                 <td></td>
                 <td>L0</td>
-                <td>${item["L0"]}</td>
-                <td>${item["IMP_L0"]}</td>
-                <td>${parseFloat((item["L0"] * item["IMP_L0"]).toFixed(2))}</td>
+                <td class='datos'>${item["L0"]}</td>
+                <td class='datos'>${item["IMP_L0"]}</td>
+                <td class='datos'>${parseFloat(
+                  (item["L0"] * item["IMP_L0"]).toFixed(2)
+                )}</td>
               </tr>
               <tr>
                 <td></td>
                 <td></td>
                 <td>LC</td>
-                <td>${item["LC"]}</td>
-                <td>${item["IMP_LC"]}</td>
-                <td>${parseFloat((item["LC"] * item["IMP_LC"]).toFixed(2))}</td>
+                <td class='datos'>${item["LC"]}</td>
+                <td class='datos'>${item["IMP_LC"]}</td>
+                <td class='datos'>${parseFloat(
+                  (item["LC"] * item["IMP_LC"]).toFixed(2)
+                )}</td>
               </tr>
               <tr>
                 <td></td>
                 <td></td>
                 <td>LN2</td>
-                <td>${item["LN2"]}</td>
-                <td>${item["IMP_LN2"]}</td>
-                <td>${parseFloat(
+                <td class='datos'>${item["LN2"]}</td>
+                <td class='datos'>${item["IMP_LN2"]}</td>
+                <td class='datos'>${parseFloat(
                   (item["LN2"] * item["IMP_LN2"]).toFixed(2)
                 )}</td>
               </tr>
@@ -815,9 +903,9 @@ class RenfeController {
                 <td></td>
                 <td></td>
                 <td>LN1</td>
-                <td>${item["LN1"]}</td>
-                <td>${item["IMP_LN1"]}</td>
-                <td>${parseFloat(
+                <td class='datos'>${item["LN1"]}</td>
+                <td class='datos'>${item["IMP_LN1"]}</td>
+                <td class='datos'>${parseFloat(
                   (item["LN1"] * item["IMP_LN1"]).toFixed(2)
                 )}</td>
               </tr>
@@ -825,61 +913,71 @@ class RenfeController {
                 <td></td>
                 <td></td>
                 <td>LR</td>
-                <td>${item["LR"]}</td>
-                <td>${item["IMP_LR"]}</td>
-                <td>${parseFloat((item["LR"] * item["IMP_LR"]).toFixed(2))}</td>
-              </tr>
-              <tr>
-                <td></td>
-                <td></td>
-                <td>LE</td>
-                <td>${item["LE"]}</td>
-                <td>${item["IMP_LE"]}</td>
-                <td>${parseFloat((item["LE"] * item["IMP_LE"]).toFixed(2))}</td>
-              </tr>
-              <tr>
-                <td></td>
-                <td></td>
-                <td>LF</td>
-                <td>${item["LF"]}</td>
-                <td>${item["IMP_LF"]}</td>
-                <td>${parseFloat((item["LF"] * item["IMP_LF"]).toFixed(2))}</td>
-              </tr>
-              <tr>
-                <td></td>
-                <td></td>
-                <td>LP</td>
-                <td>${item["LP"]}</td>
-                <td>${item["IMP_LP"]}</td>
-                <td>${parseFloat((item["LP"] * item["IMP_LP"]).toFixed(2))}</td>
-              </tr>
-              <tr>
-                <td></td>
-                <td></td>
-                <td>EV</td>
-                <td>${item["EV"]}</td>
-                <td>${item["IMP_EV"]}</td>
-                <td>${parseFloat((item["EV"] * item["IMP_EV"]).toFixed(2))}</td>
-              </tr>
-              <tr>
-                <td></td>
-                <td></td>
-                <td>DOT</td>
-                <td>${item["DOT"]}</td>
-                <td>${item["IMP_DOT"]}</td>
-                <td>${parseFloat(
-                  (item["DOT"] * item["IMP_DOT"]).toFixed(2)
+                <td class='datos'>${item["LR"]}</td>
+                <td class='datos'>${item["IMP_LR"]}</td>
+                <td class='datos'>${parseFloat(
+                  (item["LR"] * item["IMP_LR"]).toFixed(2)
                 )}</td>
               </tr>
               <tr>
                 <td></td>
                 <td></td>
+                <td>LE</td>
+                <td class='datos'>${item["LE"]}</td>
+                <td class='datos'>${item["IMP_LE"]}</td>
+                <td class='datos'>${parseFloat(
+                  (item["LE"] * item["IMP_LE"]).toFixed(2)
+                )}</td>
+              </tr>
+              <tr>
                 <td></td>
                 <td></td>
-                <td>SUBTOTAL SERIE ${item["train"]} del CENTRO ${
+                <td>LF</td>
+                <td class='datos'>${item["LF"]}</td>
+                <td class='datos'>${item["IMP_LF"]}</td>
+                <td class='datos'>${parseFloat(
+                  (item["LF"] * item["IMP_LF"]).toFixed(2)
+                )}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td></td>
+                <td>LP</td>
+                <td class='datos'>${item["LP"]}</td>
+                <td class='datos'>${item["IMP_LP"]}</td>
+                <td class='datos'>${parseFloat(
+                  (item["LP"] * item["IMP_LP"]).toFixed(2)
+                )}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td></td>
+                <td>EV</td>
+                <td class='datos'>${item["EV"]}</td>
+                <td class='datos'>${item["IMP_EV"]}</td>
+                <td class='datos'>${parseFloat(
+                  (item["EV"] * item["IMP_EV"]).toFixed(2)
+                )}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td></td>
+                <td>DOT</td>
+                <td class='datos'>${item["DOT"]}</td>
+                <td class='datos'>${item["IMP_DOT"]}</td>
+                <td class='datos'>${parseFloat(
+                  (item["DOT"] * item["IMP_DOT"]).toFixed(2)
+                )}</td>
+              </tr>
+              <tr class='totalTren'>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class='datos'>SUBTOTAL SERIE ${item["train"]} del CENTRO ${
           item["name"]
         }</td>
-                <td>${sumaTren}</td>
+                <td class='datos'>${sumaTren}</td>
               </tr>
           </table></br>
         `;
@@ -887,23 +985,33 @@ class RenfeController {
         // Si es el último elemento, mostrar el total del último centro
         if (index === resultado.length - 1) {
           html += `
-            <table>
-              <tr>
-                <td>${item["name"]}</td>
-                <td>TOTAL CENTRO ${centroActual}</td>
-                <td>${totalCentro.toFixed(2)}</td>
-              </tr>
-            </table></br></br>        
+            <div class="totalCentro">
+              <p class='totalCentro_datos'>${
+                item["name"]
+              } | <span class='resaltado'>TOTAL CENTRO ${centroActual} | ${totalCentro.toFixed(
+            2
+          )}</span></p>
+            </div></br>    
           `;
         }
       });
 
       html += `
-        <div>
-          <p>${anexo} | ${total.toFixed(2)}</p>
-          <p>FACTURA DEL 80%: ${totalFactura80.toFixed(2)}</p>
-          <p>FACTURA DEL 20%: ${(total - totalFactura80).toFixed(2)}</p>
-        </div></br>
+        <div class='totales'>
+        <p class='vacio'></p>
+        <p class='nombreTotal'>${anexo}</p>
+        <p class='total'>${total.toFixed(2)}</p>
+        </div>
+        <div class='totales'>
+        <p class='vacio'></p>
+        <p class='nombreTotal80'>FACTURA DEL 80%</p>
+        <p class='total80'>${totalFactura80.toFixed(2)}</p>
+        </div>
+        <div class='totales'>
+        <p class='vacio'></p>
+        <p class='nombreTotal20'>FACTURA DEL 20%</p>
+        <p class='total20'>${(total - totalFactura80).toFixed(2)}</p>
+        </div>
       `;
 
       html += `</body></html>`;
@@ -911,7 +1019,7 @@ class RenfeController {
       // Generar PDF
       const browser = await puppeteer.launch();
       const page = await browser.newPage();
-      await page.setContent(html);
+      await page.setContent(html, { waitUntil: "networkidle0" });
 
       // Ruta relativa a la carpeta uploads
       const pdfPath = path.join(__dirname, "../uploads", "archivo.pdf");
@@ -920,6 +1028,7 @@ class RenfeController {
         path: pdfPath, // Cambiado para usar la nueva ruta
         format: "A4",
         margin: { top: "20px", right: "20px", bottom: "20px", left: "20px" },
+        printBackground: true,
       });
 
       await browser.close();
