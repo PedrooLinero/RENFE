@@ -702,10 +702,13 @@ class RenfeController {
     const opciones = { year: "numeric", month: "long" };
     const fechaFormateada = new Date().toLocaleDateString("es-ES", opciones);
 
+    const imagePath = path.resolve(__dirname, "../public/images/Logo.png");
+
     let centroActual = "";
     let totalCentro = 0;
     let total = 0;
     let totalFactura80 = 0;
+    let codigoCentroActual = "";
 
     (async () => {
       // Crear HTML con los datos
@@ -721,6 +724,9 @@ class RenfeController {
               th, td { border: 1px solid black; text-align: left;}
               td {font-size: 12px; padding: 0.1rem;}
               th { background-color: #bdd7ee; padding: 0.2rem;}
+              .encabezado {
+                display: flex; justify-content: space-between; align-items: center;
+              }
               .resaltado {
                 background-color: yellow;
                 font-style: normal;
@@ -803,8 +809,10 @@ class RenfeController {
             </style>
           </head>
           <body>
-
-            <p class='informacion'>Nº de pedido <span class='resaltado'>${resultado[0]["NUMERO_PEDIDO"]}</span></p>
+            <div class='encabezado'>
+              <p class='informacion'>Nº de pedido <span class='resaltado'>${resultado[0]["NUMERO_PEDIDO"]}</span></p>
+              <img src="http://localhost:3000/public/images/logo.svg" style="width: 150px; margin-bottom: 20px;" />
+            </div>
 
             <h4>ANEXO FACTURACION</h4>
             <p class='informacion'>Resumen mensual de operaciones de limpieza</p></br>
@@ -829,22 +837,20 @@ class RenfeController {
         totalFactura80 += parseFloat(item["FACTURA_80"]);
 
         // Si es un nuevo centro
-        if (centroActual !== item["code"]) {
+        if (codigoCentroActual !== item["code"]) {
           // Si no es el primer elemento, mostrar el total del centro anterior
           if (index > 0) {
             html += `
             <div class="totalCentro">
-              <p class='totalCentro_datos'>${
-                item["name"]
-              } | <span class='resaltado'>TOTAL CENTRO ${centroActual} | ${totalCentro.toFixed(
+              <p class='totalCentro_datos'>${centroActual} | <span class='resaltado'>TOTAL CENTRO ${codigoCentroActual} | ${totalCentro.toFixed(
               2
             )}</span></p>
             </div></br>
       `;
           }
 
-          // Reiniciar para el nuevo centro
-          centroActual = item["code"];
+          centroActual = item["name"];
+          codigoCentroActual = item["code"];
           totalCentro = 0;
         }
 
@@ -986,9 +992,7 @@ class RenfeController {
         if (index === resultado.length - 1) {
           html += `
             <div class="totalCentro">
-              <p class='totalCentro_datos'>${
-                item["name"]
-              } | <span class='resaltado'>TOTAL CENTRO ${centroActual} | ${totalCentro.toFixed(
+              <p class='totalCentro_datos'>${centroActual} | <span class='resaltado'>TOTAL CENTRO ${codigoCentroActual} | ${totalCentro.toFixed(
             2
           )}</span></p>
             </div></br>    
@@ -1017,7 +1021,10 @@ class RenfeController {
       html += `</body></html>`;
 
       // Generar PDF
-      const browser = await puppeteer.launch();
+      const browser = await puppeteer.launch({
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        headless: true, // Asegúrate de que sea en modo headless (sin interfaz gráfica)
+      });
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: "networkidle0" });
 

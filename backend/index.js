@@ -37,6 +37,7 @@ if (process.env.NODE_ENV !== "production") {
 // Configurar rutas de la API Rest
 app.use("/api/datos", renfeRoutes);
 app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 
 //Ruta para manejar las solicitudes al archivo index.html
