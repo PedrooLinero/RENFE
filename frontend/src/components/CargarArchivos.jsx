@@ -21,6 +21,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import SaveIcon from "@mui/icons-material/Save"; // Ícono para el título del modal
 import CloseIcon from "@mui/icons-material/Close"; // Ícono para cerrar el modal
 import { apiUrl } from "../config"; // Ajusta la ruta según la estructura de tu proyecto
+import InfoIcon from "@mui/icons-material/Info";
 
 // Definimos StyledPaper con un tamaño más grande
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -140,147 +141,162 @@ function CargarArchivos() {
     e.preventDefault();
     const formDataToSend = new FormData();
 
-    if (formData.fichero1 && formData.fichero3) {
+    // alert(formData.fichero1.name)
+
+    if (formData.fichero1) {
       formDataToSend.append("fichero1", formData.fichero1);
+    }
+
+    if (formData.fichero3) {
       formDataToSend.append("fichero3", formData.fichero3);
     }
 
-    try {
-      const response = await fetch(apiUrl + "/datos", {
-        method: "POST",
-        body: formDataToSend,
-        credentials: "include",
-      });
-
-      const contentType = response.headers.get("content-type");
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error en la solicitud");
-      }
-
-      if (contentType.includes("application/json")) {
-        const data = await response.json();
-        setDialogOpen(true);
-        setDialogMessage(data.message);
-      } else {
-        setDialogOpen(true);
-        setDialogMessage("Procesando...");
-
-        const blob = await response.blob();
-
-        if (window.showSaveFilePicker) {
-          const suggestedName = "resultado.xlsx";
-          const fileHandle = await window.showSaveFilePicker({
-            suggestedName: suggestedName,
-            types: [
-              {
-                description: "Archivo Excel",
-                accept: {
-                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-                    [".xlsx"],
-                },
-              },
-            ],
-          });
-          const writable = await fileHandle.createWritable();
-          await writable.write(blob);
-          await writable.close();
-          setDialogMessage("Archivo guardado con éxito");
-        } else {
-          const defaultName = "resultado.xlsx";
-          const userFileName = prompt(
-            "Introduce el nombre del archivo (incluye .xlsx):",
-            defaultName
-          );
-          const fileName =
-            userFileName && userFileName.trim() ? userFileName : defaultName;
-
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-          setDialogMessage("Archivo guardado con éxito");
-        }
-      }
-    } catch (error) {
+    if (formData.fichero1 == null && formData.fichero3 == null) {
       setDialogOpen(true);
-      setDialogMessage(
-        error.message || "Error de red. Inténtalo de nuevo más tarde."
-      );
+      setDialogMessage("Tienes que subir al menos un archivo");
+    } else {
+      try {
+        const response = await fetch(apiUrl + "/datos", {
+          method: "POST",
+          body: formDataToSend,
+          credentials: "include",
+        });
+
+        const contentType = response.headers.get("content-type");
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Error en la solicitud");
+        }
+
+        if (contentType.includes("application/json")) {
+          const data = await response.json();
+          setDialogOpen(true);
+          setDialogMessage(data.message);
+        } else {
+          setDialogOpen(true);
+          setDialogMessage("Procesando...");
+
+          const blob = await response.blob();
+
+          if (window.showSaveFilePicker) {
+            const suggestedName = "resultado.xlsx";
+            const fileHandle = await window.showSaveFilePicker({
+              suggestedName: suggestedName,
+              types: [
+                {
+                  description: "Archivo Excel",
+                  accept: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                      [".xlsx"],
+                  },
+                },
+              ],
+            });
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            setDialogMessage("Archivo guardado con éxito");
+          } else {
+            const defaultName = "resultado.xlsx";
+            const userFileName = prompt(
+              "Introduce el nombre del archivo (incluye .xlsx):",
+              defaultName
+            );
+            const fileName =
+              userFileName && userFileName.trim() ? userFileName : defaultName;
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            setDialogMessage("Archivo guardado con éxito");
+          }
+        }
+      } catch (error) {
+        setDialogOpen(true);
+        setDialogMessage(
+          error.message || "Error de red. Inténtalo de nuevo más tarde."
+        );
+      }
     }
   };
 
   const handleSubmit1 = async (e) => {
     e.preventDefault();
 
-    try {
-      const response = await fetch(apiUrl + "/datos/descargar", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData2),
-      });
-
-      if (response.ok) {
-        // Obtener el blob del PDF
-
-        setDialogOpen(true);
-        setDialogMessage("Procesando...");
-
-        const blob = await response.blob();
-
-        if (window.showSaveFilePicker) {
-          const suggestedName = "archivo.pdf";
-          const fileHandle = await window.showSaveFilePicker({
-            suggestedName: suggestedName,
-            types: [
-              {
-                description: "Archivo Excel",
-                accept: {
-                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-                    [".pdf"],
-                },
-              },
-            ],
-          });
-          const writable = await fileHandle.createWritable();
-          await writable.write(blob);
-          await writable.close();
-          setDialogMessage("Archivo guardado con éxito");
-        } else {
-          const defaultName = "archivo.pdf";
-          const userFileName = prompt(
-            "Introduce el nombre del archivo (incluye .pdf):",
-            defaultName
-          );
-          const fileName =
-            userFileName && userFileName.trim() ? userFileName : defaultName;
-
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-          setDialogMessage("Archivo guardado con éxito");
-        }
-      } else {
-        const data = await response.json();
-        alert(data.mensaje || "Error al generar el PDF");
-      }
-    } catch (error) {
+    if (formData2.anexo === "") {
       setDialogOpen(true);
-      setDialogMessage(
-        error.message || "Error de red. Inténtalo de nuevo más tarde."
-      );
+      setDialogMessage("Selecciona un tipo de anexo de factura");
+    } else {
+      try {
+        const response = await fetch(apiUrl + "/datos/descargar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData2),
+        });
+
+        if (response.ok) {
+          // Obtener el blob del PDF
+
+          setDialogOpen(true);
+          setDialogMessage("Procesando...");
+
+          const blob = await response.blob();
+
+          if (window.showSaveFilePicker) {
+            const suggestedName = `Anexo Facturación ${formData2.anexo}.pdf`;
+            const fileHandle = await window.showSaveFilePicker({
+              suggestedName: suggestedName,
+              types: [
+                {
+                  description: "Archivo Excel",
+                  accept: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                      [".pdf"],
+                  },
+                },
+              ],
+            });
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            setDialogMessage("Archivo guardado con éxito");
+          } else {
+            const defaultName = `Anexo Facturación ${formData2.anexo}.pdf`;
+            const userFileName = prompt(
+              "Introduce el nombre del archivo (incluye .pdf):",
+              defaultName
+            );
+            const fileName =
+              userFileName && userFileName.trim() ? userFileName : defaultName;
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            setDialogMessage("Archivo guardado con éxito");
+          }
+        } else {
+          const data = await response.json();
+          alert(data.mensaje || "Error al generar el PDF");
+        }
+      } catch (error) {
+        setDialogOpen(true);
+        setDialogMessage(
+          error.message || "Error de red. Inténtalo de nuevo más tarde."
+        );
+      }
     }
   };
 
@@ -337,7 +353,7 @@ function CargarArchivos() {
               <Box
                 sx={{
                   display: "flex",
-                  flexDirection: {xs: "column", lg: "row"},
+                  flexDirection: { xs: "column", lg: "row" },
                   gap: "1rem",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -374,7 +390,6 @@ function CargarArchivos() {
                     InputLabelProps={{
                       shrink: true,
                     }}
-                    required
                     sx={{
                       width: "100%",
                       "& .MuiOutlinedInput-root": {
@@ -421,7 +436,6 @@ function CargarArchivos() {
                     InputLabelProps={{
                       shrink: true,
                     }}
-                    required
                     sx={{
                       width: "100%",
                       "& .MuiOutlinedInput-root": {
@@ -524,6 +538,21 @@ function CargarArchivos() {
               <Box
                 sx={{
                   display: "flex",
+                  gap: 1,
+                  marginY: "1rem",
+                  color: "#d32f2f",
+                }}
+              >
+                <InfoIcon></InfoIcon>
+                <p>
+                  Antes de realizar esta operación tienes que actualizar la
+                  plantilla.
+                </p>
+              </Box>
+
+              <Box
+                sx={{
+                  display: "flex",
                   justifyContent: "center",
                   width: "100%",
                   mt: 2,
@@ -557,7 +586,7 @@ function CargarArchivos() {
         >
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <SaveIcon sx={{ mr: 1, color: "#d32f2f" }} />
-            Guardando Archivo
+            Procesando informacion
           </Box>
           <IconButton onClick={handleDialogClose} sx={{ color: "#d32f2f" }}>
             <CloseIcon />

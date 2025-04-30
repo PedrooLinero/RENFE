@@ -316,18 +316,29 @@ class RenfeController {
         ? req.files["fichero3"][0].filename
         : null;
 
-      if (!fichero1 || !fichero3) {
-        return res.status(400).json({ message: "Se debe subir el archivo" });
+      let excelData1 = [];
+      let excelData3 = [];
+      let resultadosComparacion = [];
+
+      if (fichero1 && fichero1 !== "resumenFechas.xls") {
+        return res.status(400).json({
+          message: "El archivo debe llamarse exactamente 'resumenFechas.xls'",
+        });
       }
 
-      const excelData1 = await RenfeController.leerExcel(fichero1);
-      const excelData2 = await RenfeController.leerExcel2(fichero2);
-      const excelData3 = await RenfeController.leerExcel3(fichero3);
+      if (fichero1) {
+        excelData1 = await RenfeController.leerExcel(fichero1);
+      }
 
-      const resultadosComparacion = RenfeController.compararArrays(
-        excelData3,
-        excelData2
-      );
+      const excelData2 = await RenfeController.leerExcel2(fichero2);
+
+      if (fichero3) {
+        excelData3 = await RenfeController.leerExcel3(fichero3);
+        resultadosComparacion = RenfeController.compararArrays(
+          excelData3,
+          excelData2
+        );
+      }
 
       // console.log("Resultados Comparación (antes de mapeo):", resultadosComparacion);
 
@@ -574,6 +585,15 @@ class RenfeController {
       const processedData = [];
       const processedKeys = new Set(); // Para controlar duplicados
 
+      let fechaResumenFechas = data[0][0]
+
+      let fechas = fechaResumenFechas.split('(')[1];
+      
+      let primeraFecha = fechas.split('-')[0].trim();     
+
+      let mes = primeraFecha.split('/')[1];
+      let year = primeraFecha.split('/')[2];
+
       // Primer bucle: Procesar data para llenar mapaTotal
       for (let i = 1; i < data.length; i++) {
         let fila = data[i];
@@ -633,12 +653,15 @@ class RenfeController {
             ),
             name: excelName,
             train: excelTrain,
+            mes: mes,
+            año: year,
             L0: categorias.L0 || 0,
             LC: categorias.LC || 0,
             LN2: categorias.LN2 || 0,
             LN1: categorias.LN1 || 0,
             LR: categorias.LR || 0,
             LE: categorias.LE || 0,
+            LET: categorias.LET || 0,
             LF: categorias.LF || 0,
             LP: categorias.LP || 0,
             EV: categorias.EV || 0,
@@ -698,11 +721,6 @@ class RenfeController {
       "Base_updated.xlsx",
       anexo
     );
-
-    const opciones = { year: "numeric", month: "long" };
-    const fechaFormateada = new Date().toLocaleDateString("es-ES", opciones);
-
-    const imagePath = path.resolve(__dirname, "../public/images/Logo.png");
 
     let centroActual = "";
     let totalCentro = 0;
@@ -806,6 +824,11 @@ class RenfeController {
                 background-color: #f8cbad;
                 border: 1px solid black;
               }
+
+              .firma {
+                display: flex;
+                justify-content: right;
+              }
             </style>
           </head>
           <body>
@@ -816,7 +839,7 @@ class RenfeController {
 
             <h4>ANEXO FACTURACION</h4>
             <p class='informacion'>Resumen mensual de operaciones de limpieza</p></br>
-            <p class='informacion'>Mes/año | ${fechaFormateada} | <span class='resaltado'>${resultado[0]["f"]}</span></p></br>
+            <p class='informacion'>Mes/año | ${resultado[0]["mes"]}/${resultado[0]["año"]} | <span class='resaltado'>${resultado[0]["f"]}</span></p></br>
             `;
       resultado.forEach((item, index) => {
         let sumaTren = (
@@ -826,6 +849,7 @@ class RenfeController {
           parseFloat(item["LN1"] * item["IMP_LN1"]) +
           parseFloat(item["LR"] * item["IMP_LR"]) +
           parseFloat(item["LE"] * item["IMP_LE"]) +
+          parseFloat(item["LET"] * item["IMP_LET"]) +
           parseFloat(item["LF"] * item["IMP_LF"]) +
           parseFloat(item["LP"] * item["IMP_LP"]) +
           parseFloat(item["EV"] * item["IMP_EV"]) +
@@ -938,6 +962,16 @@ class RenfeController {
               <tr>
                 <td></td>
                 <td></td>
+                <td>LET</td>
+                <td class='datos'>${item["LET"]}</td>
+                <td class='datos'>${item["IMP_LET"]}</td>
+                <td class='datos'>${parseFloat(
+                  (item["LET"] * item["IMP_LET"]).toFixed(2)
+                )}</td>
+              </tr>
+              <tr>
+                <td></td>
+                <td></td>
                 <td>LF</td>
                 <td class='datos'>${item["LF"]}</td>
                 <td class='datos'>${item["IMP_LF"]}</td>
@@ -1015,6 +1049,10 @@ class RenfeController {
         <p class='vacio'></p>
         <p class='nombreTotal20'>FACTURA DEL 20%</p>
         <p class='total20'>${(total - totalFactura80).toFixed(2)}</p>
+        </div><br>
+
+        <div class='firma'>
+          <img src="http://localhost:3000/public/images/Firma Anexo.png" style="width: 200px; margin-bottom: 20px;" />
         </div>
       `;
 
@@ -1042,7 +1080,10 @@ class RenfeController {
       console.log(`PDF generado con Puppeteer y guardado en: ${pdfPath}`);
 
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", "attachment; filename=archivo.pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=Anexo Facturación ${resultado[0]["f"]}.pdf`
+      );
       res.send(pdf);
     })();
 
